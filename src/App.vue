@@ -16,10 +16,10 @@
               <RangePart :tableData="tableData"></RangePart>
             </div>
             <div class="radarPart">
-              <RadarPart :tableData="tableData" @updateCount="updateCount"></RadarPart>
+              <RadarPart :tableData="tableData" :activeFilters="activeFilters" @updateCount="updateCount"></RadarPart>
             </div>
             <div class="summaryPart">
-              <SummaryPart :tableData="tableData"></SummaryPart>
+              <SummaryPart :tableData="tableData" :activeFilters="activeFilters"></SummaryPart>
             </div>
           </a-flex>
         </div>
@@ -58,19 +58,30 @@ import RadarPart from './components/RadarPart.vue'
 import RangePart from './components/RangePart.vue'
 import SummaryPart from './components/SummaryPart.vue'
 import rawData from '@/assets/nhanes_cvd_risk_2021_2023.json';
+import groupData from '@/assets/riskless_data.json';
 
   const tableData = ref([]);
-
+  const rawGroupData = ref([])
   
  
   const activeKey = ref('1');
+  const activeFilters = {
+    ageGroup: new Set(),   // 可能包含: {"Middle-Aged", "Senior"}
+    bmiGroup: new Set(),   // 可能包含: {"Obese I"}
+    bpGroup: new Set(),     // 为空表示该维度全选
+    cholGroup: new Set(),
+    diateticGroup: new Set(),
+  };
 
   const updateCount = (value) => {
     console.log(value, '111111')
   };
    onMounted(() => {
     tableData.value = rawData;
+    rawGroupData.value = groupData
     console.log('数据已就绪:', tableData.value);
+    console.log('group数据已就绪:', rawGroupData.value);
+
    })
   
 
