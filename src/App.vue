@@ -13,14 +13,23 @@
           </div>
           <a-flex>
             <div class="rangePart">
-              <RangePart :tableData="tableData"></RangePart>
+              <RangePart :rawGroupData="rawGroupData"></RangePart>
             </div>
-            <div class="radarPart">
-              <RadarPart :tableData="tableData" :activeFilters="activeFilters" @updateCount="updateCount"></RadarPart>
+
+            <div class="rightPart">
+              <div>
+                <TopFilter :activeFilters="activeFilters"></TopFilter>
+              </div>
+              <div class="twoContainer">
+                <div class="radarPart">
+                  <RadarPart :processObject="processArray" ></RadarPart>
+                </div>
+                <div class="summaryPart">
+                  <SummaryPart :processObject="processArray" ></SummaryPart>
+                </div>
+              </div>
             </div>
-            <div class="summaryPart">
-              <SummaryPart :tableData="tableData" :activeFilters="activeFilters"></SummaryPart>
-            </div>
+            
           </a-flex>
         </div>
       </a-tab-pane>
@@ -51,37 +60,84 @@
 
 <script setup>
 // import DashBoard from './components/DashBoard.vue'
-import {ref, onMounted} from 'vue'
+import {ref, onMounted, watch} from 'vue'
 import { AppleOutlined, AndroidOutlined ,BulbTwoTone} from '@ant-design/icons-vue';
 import UserForm from './components/UserForm.vue'
 import RadarPart from './components/RadarPart.vue'
 import RangePart from './components/RangePart.vue'
 import SummaryPart from './components/SummaryPart.vue'
-import rawData from '@/assets/nhanes_cvd_risk_2021_2023.json';
+import TopFilter from './components/TopFilter.vue';
 import groupData from '@/assets/riskless_data.json';
 
-  const tableData = ref([]);
-  const rawGroupData = ref([])
   
+  const rawGroupData = ref([])
+
  
   const activeKey = ref('1');
-  const activeFilters = {
-    ageGroup: new Set(),   // 可能包含: {"Middle-Aged", "Senior"}
-    bmiGroup: new Set(),   // 可能包含: {"Obese I"}
-    bpGroup: new Set(),     // 为空表示该维度全选
-    cholGroup: new Set(),
-    diateticGroup: new Set(),
-  };
 
-  const updateCount = (value) => {
-    console.log(value, '111111')
-  };
-   onMounted(() => {
-    tableData.value = rawData;
+  const activeFilters = ref({
+    ageGroup: ['Middle-Aged', 'Senior', 'Elderly'],   // 可能包含: {"Middle-Aged", "Senior"}
+    bmiGroup: ['Obese I'],   // 可能包含: {"Obese I"}
+    bpGroup: ['Normal', 'Elevated'],     // 
+    lipidGroup: ['Desirable', 'Borderline', 'Extreme'],
+    diabetesLabel: ['Diabetic'],
+  });
+
+  const processArray = ref(null)
+
+  const processData = () => {
+    const filters = activeFilters.value;
+    const activeKeys = Object.keys(filters).filter(key => filters[key].length > 0);
+   
+    const result = {
+      selectedCVD: [],
+      selectedNoCVD: [],
+      unselectedCVD: [],
+      unselectedNoCVD: []
+    };
+    rawGroupData.value.forEach(item => {
+     
+      const isMatched = activeKeys.every(key => {
+       
+        return filters[key].includes(item.displayGroups[key]);
+      });
+
+     
+      const hasCVD = item.rawValues.CVD === 1;
+
+    
+      if (isMatched) {
+        if (hasCVD) result.selectedCVD.push(item);
+        else result.selectedNoCVD.push(item);
+      } else {
+        if (hasCVD) result.unselectedCVD.push(item);
+        else result.unselectedNoCVD.push(item);
+      }
+    });
+   
+    return result
+    
+  }
+  watch(() => activeFilters.value, () => {
+    processArray.value = processData();
+  })
+  onMounted(() => {
+    
     rawGroupData.value = groupData
-    console.log('数据已就绪:', tableData.value);
+   
     console.log('group数据已就绪:', rawGroupData.value);
+    processArray.value = processData();
+    console.log(processArray.value, 'rocessArray.value')
 
+    setTimeout(()=>{
+      activeFilters.value = {
+        ageGroup: [],   // 可能包含: {"Middle-Aged", "Senior"}
+        bmiGroup: [],   // 可能包含: {"Obese I"}
+        bpGroup: [],     // 
+        lipidGroup: [],
+        diabetesLabel: [],
+      };
+    }, 30000)
    })
   
 
@@ -100,10 +156,18 @@ import groupData from '@/assets/riskless_data.json';
 .rangePart{
   width: 40%;
 }
+.rightPart{
+  width: 60%;
+  
+}
+.twoContainer{
+  display: flex;
+  width: 100%;
+}
 .radarPart{
-  width: 30%;
+  width: 50%;
 }
 .summaryPart{
-  width: 30%;
+  width: 50%;
 }
 </style>
