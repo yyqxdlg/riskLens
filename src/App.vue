@@ -31,6 +31,10 @@
             </div>
             
           </a-flex>
+          <div>
+            <a-button @click="showOlderModal" style="position: absolute; top:0px; right:0;">Health Time Machine</a-button>
+          </div>
+          <TimeMachine v-if="open" :rawGroupData="rawGroupData" :modalState="modalState"  @colseTimeModal="colseTimeModal"></TimeMachine>
         </div>
       </a-tab-pane>
       <a-tab-pane key="2">
@@ -68,7 +72,7 @@ import RangePart from './components/RangePart.vue'
 import SummaryPart from './components/SummaryPart.vue'
 import TopFilter from './components/TopFilter.vue';
 import groupData from '@/assets/riskless_data.json';
-
+import TimeMachine from './components/TimeMachine.vue';
   
   const rawGroupData = ref([])
 
@@ -121,6 +125,29 @@ import groupData from '@/assets/riskless_data.json';
   watch(() => activeFilters.value, () => {
     processArray.value = processData();
   })
+  const open = ref(false)
+  const modalState = ref({
+      open: false,
+      userAge: 0,
+      otherInfo: {
+        
+      }
+    })
+  const showOlderModal = () => {
+    modalState.value = {
+      open: true,
+      userAge: 47,
+      otherInfo: {
+
+      }
+
+    }
+    open.value = true
+  }
+  const colseTimeModal = () => {
+    open.value = false
+    
+  }
   onMounted(() => {
     
     rawGroupData.value = groupData
