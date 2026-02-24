@@ -1,172 +1,207 @@
 <template>
   <div>
-    <!-- RadarPart -->
-    <!-- <a-button @click="sendData">test</a-button>         -->
-    <div ref="redarChart" style="width: 100%; height: 400px;"></div>
+    <div ref="radarChart" style="width: 100%; height: 400px;" />
   </div>
 </template>
 
 <script setup>
-  import * as echarts from 'echarts';
-  import {ref, onMounted, onBeforeUnmount, watch} from 'vue';
-  const props = defineProps({  
-    processObject: Object,
+import * as echarts from 'echarts'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+
+const props = defineProps({
+  processObject: {
+    type: Object,
+    default: () => ({
+      selectedCVD: [],
+      selectedNoCVD: [],
+      unselectedCVD: [],
+      unselectedNoCVD: []
+    })
+  }
+})
+
+const radarChart = ref(null)
+let chart = null
+
+const MAX_INDIVIDUAL_LINES = 140
+
+const metrics = [
+  { key: 'age', name: 'Age', max: 85 },
+  { key: 'bmi', name: 'BMI', max: 70 },
+  { key: 'bp', name: 'Systolic BP', max: 220 },
+  { key: 'lipids', name: 'Cholesterol', max: 450 },
+  { key: 'diabetes', name: 'Diabetes', max: 1 }
+]
+
+const defaultProcess = {
+  selectedCVD: [],
+  selectedNoCVD: [],
+  unselectedCVD: [],
+  unselectedNoCVD: []
+}
+
+const asNumber = (value, fallback = 0) => {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+const sampleRows = (rows = [], max = MAX_INDIVIDUAL_LINES) => {
+  if (rows.length <= max) return rows
+  const step = rows.length / max
+  const sampled = []
+  for (let i = 0; i < max; i += 1) {
+    sampled.push(rows[Math.floor(i * step)])
+  }
+  return sampled
+}
+
+const toMetricArray = (row) => metrics.map(m => asNumber(row?.rawValues?.[m.key], 0))
+
+const averageMetrics = (rows = []) => {
+  if (!rows.length) return metrics.map(() => 0)
+
+  return metrics.map((m) => {
+    const sum = rows.reduce((acc, row) => acc + asNumber(row?.rawValues?.[m.key], 0), 0)
+    return Number((sum / rows.length).toFixed(2))
   })
-  const redarChart = ref(null);
-  // const emit = defineEmits(['updateCount'])
-  // const sendData = () => {
-  //   // 触发事件
-  //   emit('updateCount', 100);
-  // };
+}
 
-  const calculateRadarData = () => {
-    // 定义维度，必须与 radar.indicator 顺序一致
-    const metrics = ['age', 'bmi', 'bp', 'lipids','diabetes']; 
+const buildRadarData = (processObject) => {
+  const source = processObject || defaultProcess
 
-    const getAverage = (arr) => {
-      if (arr.length === 0) return [0, 0, 0, 0, 0];
-        return metrics.map(key => {
-          const sum = arr.reduce((acc, item) => acc + item.rawValues[key], 0);
-          return (sum / arr.length).toFixed(2);
-        });
-      };
+  const selectedCVD = source.selectedCVD || []
+  const selectedNoCVD = source.selectedNoCVD || []
 
-    // 1. 获取所有个体的原始数据（用于淡色背景）
-    const individualCVD = processArray.value.selectedCVD.map(item => metrics.map(k => item.rawValues[k]));
-    const individualNoCVD = processArray.value.selectedNoCVD.map(item => metrics.map(k => item.rawValues[k]));
+  return {
+    individualCVD: sampleRows(selectedCVD).map(toMetricArray),
+    individualNoCVD: sampleRows(selectedNoCVD).map(toMetricArray),
+    avgCVD: averageMetrics(selectedCVD),
+    avgNoCVD: averageMetrics(selectedNoCVD),
+    userData: [45, 28, 135, 210, 1]
+  }
+}
 
-    // 2. 计算平均值
-    const avgCVD = getAverage(processArray.value.selectedCVD);
-    const avgNoCVD = getAverage(processArray.value.selectedNoCVD);
-
-    // 3. 假设这是当前用户自己的数据（从某处获取）
-    const userData = [45, 28, 135, 210,1]; 
-
-    return { individualCVD, individualNoCVD, avgCVD, avgNoCVD, userData };
-  };
-
-  let myChart = null;
-  const createRadarChart = () => {
-    const data = calculateRadarData();
-    if (!redarChart.value) return;
-
-    // 1. 如果已经有实例了，先销毁它
-    if (myChart) {
-      myChart.dispose(); 
-      myChart = null; // 确保引用清空
+const buildOption = (data) => ({
+  title: {
+    text: 'Risk Factor Comparison',
+    left: 'center',
+    textStyle: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: '#374151'
     }
-    myChart = echarts.init(redarChart.value);
-
-    const option = {
-      title: { text: 'Risk Factor Comparison' },
-      tooltip: { trigger: 'item' },
-      legend: {
-        data: ['CVD Avg', 'Healthy Avg', 'My Data', 'CVD Individuals','Healthy Individuals'],
-        bottom: 0
-      },
-      radar: {
-        // 这里的 max 建议根据你数据集的物理极限设置
-        indicator: [
-          { name: 'Age',  },
-          { name: 'BMI',  },
-          { name: 'Systolic BP',  },
-          { name: 'Cholesterol',  },
-          { name: 'Diatetes', max: 1 }
-        ],
-        shape: 'circle',
-        splitNumber: 5
-      },
-      series: [
-        // --- 第一层：所有 CVD 个体 (淡红色线) ---
+  },
+  tooltip: {
+    trigger: 'item'
+  },
+  legend: {
+    data: ['CVD Avg', 'Healthy Avg', 'My Data', 'CVD Individuals', 'Healthy Individuals'],
+    bottom: 0,
+    textStyle: {
+      fontSize: 10
+    }
+  },
+  radar: {
+    indicator: metrics.map(m => ({ name: m.name, max: m.max })),
+    shape: 'circle',
+    splitNumber: 4,
+    axisName: {
+      color: '#374151',
+      fontSize: 10,
+      fontWeight: 600
+    },
+    splitLine: {
+      lineStyle: {
+        color: 'rgba(148,163,184,0.45)'
+      }
+    },
+    splitArea: {
+      areaStyle: {
+        color: ['rgba(248,250,252,0.8)', 'rgba(241,245,249,0.8)']
+      }
+    }
+  },
+  series: [
+    {
+      name: 'CVD Individuals',
+      type: 'radar',
+      silent: true,
+      lineStyle: { width: 1, opacity: 0.05 },
+      data: data.individualCVD,
+      symbol: 'none',
+      color: '#ff4d4f'
+    },
+    {
+      name: 'Healthy Individuals',
+      type: 'radar',
+      silent: true,
+      lineStyle: { width: 1, opacity: 0.05 },
+      data: data.individualNoCVD,
+      symbol: 'none',
+      color: '#1890ff'
+    },
+    {
+      name: 'Averages and User',
+      type: 'radar',
+      data: [
         {
-          name: 'CVD Individuals',
-          type: 'radar',
-          silent: true, // 不触发鼠标事件，提升性能
-          lineStyle: { width: 1, opacity: 0.05 }, // 极低透明度
-          itemStyle: { opacity: 1 }, // 隐藏圆点
-          data: data.individualCVD,
-          symbol: 'none',
-          color: '#ff4d4f'
+          value: data.avgCVD,
+          name: 'CVD Avg',
+          lineStyle: { width: 2, type: 'dashed' },
+          areaStyle: { color: 'rgba(255, 77, 79, 0.2)' }
         },
-        // --- 第二层：所有 Healthy 个体 (淡蓝色线) ---
         {
-          name: 'Healthy Individuals',
-          type: 'radar',
-          silent: true,
-          lineStyle: { width: 1, opacity: 0.05 },
-          itemStyle: { opacity: 1 },
-          data: data.individualNoCVD,
-          symbol: 'none',
-          color: '#1890ff'
+          value: data.avgNoCVD,
+          name: 'Healthy Avg',
+          lineStyle: { width: 2, type: 'dashed' },
+          areaStyle: { color: 'rgba(24, 144, 255, 0.2)' }
         },
-        // --- 第三层：重点展示的数据 (平均值与用户) ---
         {
-          name: 'Averages and User',
-          type: 'radar',
-          data: [
-            {
-              value: data.avgCVD,
-              name: 'CVD Avg',
-              lineStyle: { width: 3, type: 'dashed' }, // 虚线
-              areaStyle: { color: 'rgba(255, 77, 79, 0.2)' } // 淡色填充
-            },
-            {
-              value: data.avgNoCVD,
-              name: 'Healthy Avg',
-              lineStyle: { width: 3, type: 'dashed' },
-              areaStyle: { color: 'rgba(24, 144, 255, 0.2)' }
-            },
-            {
-              value: data.userData,
-              name: 'My Data',
-              lineStyle: { width: 4, color: '#722ed1' }, // 鲜亮的紫色
-              itemStyle: { color: '#722ed1', borderWidth: 2 },
-              areaStyle: { color: 'rgba(114, 46, 209, 0.4)' },
-              label: { show: true, formatter: (p) => p.value }
-            }
-          ]
+          value: data.userData,
+          name: 'My Data',
+          lineStyle: { width: 3, color: '#722ed1' },
+          itemStyle: { color: '#722ed1', borderWidth: 1 },
+          areaStyle: { color: 'rgba(114, 46, 209, 0.28)' }
         }
-      ],
-      dataZoom: [
-        {
-          type: 'inside',
-          orient: 'vertical', // 如果想上下缩放高度
-          yAxisIndex: 0
-        }
-      ],
-    };
-
-    myChart.setOption(option, true);
-  };
-  watch(() => props.processObject, (newValue)=>{
-   
-    if(newValue){
-      processArray.value = props.processObject
-      console.log('4444444', newValue)
-      createRadarChart()
+      ]
     }
-  },{ deep: true })
-  const processArray = ref({
-    selectedCVD: [],
-    selectedNoCVD: [],
-  })
-  onMounted(() => {
-   setTimeout(()=>{
-      processArray.value = props.processObject
-      createRadarChart();
-      
-    }, 1000)
-  });
+  ]
+})
 
-  onBeforeUnmount(() => {
-    // 6. 销毁实例
-    if (myChart) {
-      myChart.dispose();
-      window.removeEventListener('resize', () => myChart.resize());
-    }
-  });
+const render = () => {
+  if (!chart) return
+  const data = buildRadarData(props.processObject)
+  chart.setOption(buildOption(data), true)
+}
+
+const onResize = () => {
+  chart?.resize()
+}
+
+onMounted(() => {
+  if (!radarChart.value) return
+
+  chart = echarts.init(radarChart.value)
+  render()
+  window.addEventListener('resize', onResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onResize)
+  if (chart) {
+    chart.dispose()
+    chart = null
+  }
+})
+
+watch(
+  () => props.processObject,
+  () => {
+    render()
+  },
+  { deep: true }
+)
 </script>
 
-<style lang="scss" scoped>
-
+<style scoped>
 </style>
