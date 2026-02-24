@@ -9,17 +9,28 @@
         </template>
         <div>
           <div class="uesrForm">
-           <UserForm></UserForm>  
+           <UserForm :clearSignal="clearSignal" @updateFilters="onFormFiltersUpdate"></UserForm>
           </div>
-          <a-flex>
+          <div class="topFilterRow">
+            <div class="topFilterContent">
+              <TopFilter :activeFilters="activeFilters"></TopFilter>
+            </div>
+            <div class="topActions">
+              <a-button class="clearAllBtn" @click="clearAllFilters">Clear All Filters</a-button>
+              <a-button class="timeMachineBtn" @click="showOlderModal">Health Time Machine</a-button>
+            </div>
+          </div>
+          <a-flex class="mainChartsRow">
             <div class="rangePart">
-              <RangePart :rawGroupData="rawGroupData"></RangePart>
+              <RangePart
+                :rawGroupData="rawGroupData"
+                :contextFilters="formFilters"
+                :clearSignal="clearSignal"
+                @updateFilters="onRangeFiltersUpdate"
+              />
             </div>
 
             <div class="rightPart">
-              <div>
-                <TopFilter :activeFilters="activeFilters"></TopFilter>
-              </div>
               <div class="twoContainer">
                 <div class="radarPart">
                   <RadarPart :processObject="processArray" ></RadarPart>
@@ -31,9 +42,6 @@
             </div>
             
           </a-flex>
-          <div>
-            <a-button @click="showOlderModal" style="position: absolute; top:0px; right:0;">Health Time Machine</a-button>
-          </div>
           <TimeMachine v-if="open" :rawGroupData="rawGroupData" :modalState="modalState"  @colseTimeModal="colseTimeModal"></TimeMachine>
         </div>
       </a-tab-pane>
@@ -76,18 +84,62 @@ import TimeMachine from './components/TimeMachine.vue';
   
   const rawGroupData = ref([])
 
+  const emptyFilterMap = () => ({
+    ageGroup: [],
+    bmiGroup: [],
+    bpGroup: [],
+    lipidGroup: [],
+    diabetesLabel: []
+  })
  
   const activeKey = ref('1');
 
-  const activeFilters = ref({
-    ageGroup: ['Middle-Aged', 'Senior', 'Elderly'],   // 可能包含: {"Middle-Aged", "Senior"}
-    bmiGroup: ['Obese I'],   // 可能包含: {"Obese I"}
-    bpGroup: ['Normal', 'Elevated'],     // 
-    lipidGroup: ['Desirable', 'Borderline', 'Extreme'],
-    diabetesLabel: ['Diabetic'],
-  });
+  const activeFilters = ref(emptyFilterMap());
+  const rangeFilters = ref(emptyFilterMap());
+  const formFilters = ref(emptyFilterMap());
+  const clearSignal = ref(0);
 
   const processArray = ref(null)
+
+  const dedupe = (arr = []) => [...new Set(arr)];
+
+  const mergeFiltersByIntersection = (fromRange = [], fromForm = []) => {
+    const left = dedupe(fromRange);
+    const right = dedupe(fromForm);
+
+    if (!left.length && !right.length) return [];
+    if (!left.length) return right;
+    if (!right.length) return left;
+    const inter = left.filter(item => right.includes(item));
+    return inter;
+  };
+
+  const rebuildActiveFilters = () => {
+    const next = emptyFilterMap();
+    Object.keys(next).forEach((key) => {
+      const fromRange = rangeFilters.value[key] || [];
+      const fromForm = formFilters.value[key] || [];
+      next[key] = mergeFiltersByIntersection(fromRange, fromForm);
+    });
+    activeFilters.value = next;
+  };
+
+  const onRangeFiltersUpdate = (val) => {
+    rangeFilters.value = { ...rangeFilters.value, ...val };
+    rebuildActiveFilters();
+  };
+
+  const onFormFiltersUpdate = (val) => {
+    formFilters.value = { ...formFilters.value, ...val };
+    rebuildActiveFilters();
+  };
+
+  const clearAllFilters = () => {
+    formFilters.value = emptyFilterMap();
+    rangeFilters.value = emptyFilterMap();
+    rebuildActiveFilters();
+    clearSignal.value += 1;
+  };
 
   const processData = () => {
     const filters = activeFilters.value;
@@ -102,7 +154,6 @@ import TimeMachine from './components/TimeMachine.vue';
     rawGroupData.value.forEach(item => {
      
       const isMatched = activeKeys.every(key => {
-       
         return filters[key].includes(item.displayGroups[key]);
       });
 
@@ -124,7 +175,8 @@ import TimeMachine from './components/TimeMachine.vue';
   }
   watch(() => activeFilters.value, () => {
     processArray.value = processData();
-  })
+  }, { deep: true })
+
   const open = ref(false)
   const modalState = ref({
       open: false,
@@ -152,19 +204,8 @@ import TimeMachine from './components/TimeMachine.vue';
     
     rawGroupData.value = groupData
    
-    console.log('group数据已就绪:', rawGroupData.value);
+    rebuildActiveFilters();
     processArray.value = processData();
-    console.log(processArray.value, 'rocessArray.value')
-
-    setTimeout(()=>{
-      activeFilters.value = {
-        ageGroup: [],   // 可能包含: {"Middle-Aged", "Senior"}
-        bmiGroup: [],   // 可能包含: {"Obese I"}
-        bpGroup: [],     // 
-        lipidGroup: [],
-        diabetesLabel: [],
-      };
-    }, 30000)
    })
   
 
@@ -181,20 +222,53 @@ import TimeMachine from './components/TimeMachine.vue';
 }
 
 .rangePart{
-  width: 40%;
+  width: 45%;
+  height: 400px;
 }
 .rightPart{
-  width: 60%;
-  
+  width: 55%;
+  height: 400px;
+  display: flex;
+  align-items: stretch;
+}
+.mainChartsRow{
+  height: 400px;
+  align-items: stretch;
+}
+.topFilterRow{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.topFilterContent{
+  flex: 1;
+  min-width: 0;
+}
+.topActions{
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.clearAllBtn{
+  border-radius: 6px;
+}
+.timeMachineBtn{
+  border-radius: 6px;
 }
 .twoContainer{
   display: flex;
   width: 100%;
+  height: 100%;
+  align-items: stretch;
 }
 .radarPart{
   width: 50%;
+  height: 100%;
 }
 .summaryPart{
   width: 50%;
+  height: 100%;
 }
 </style>
