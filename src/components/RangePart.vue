@@ -34,6 +34,16 @@ const props = defineProps({
       diabetesLabel: []
     })
   },
+  userInputs: {
+    type: Object,
+    default: () => ({
+      age: null,
+      bmi: null,
+      sbp: null,
+      chol: null,
+      diabetes: null
+    })
+  },
   clearSignal: {
     type: Number,
     default: 0
@@ -74,6 +84,54 @@ const shortLabelMap = {
   Diabetic: 'DM'
 }
 
+const INPUT_LIMITS = {
+  age: [18, 95],
+  bmi: [14.9, 68.9],
+  sbp: [80, 220],
+  chol: [100, 450]
+}
+const CATEGORY_WINDOWS = {
+  ageGroup: {
+    'Young Adult': [18, 40],
+    'Middle-Aged': [40, 60],
+    Senior: [60, 75],
+    Elderly: [75, 95]
+  },
+  bmiGroup: {
+    Underweight: [14.9, 18.5],
+    Healthy: [18.5, 25],
+    Overweight: [25, 30],
+    'Obese I': [30, 35],
+    'Severe Obesity': [35, 68.9]
+  },
+  bpGroup: {
+    Low: [80, 90],
+    Normal: [90, 120],
+    Elevated: [120, 130],
+    'Stage 1': [130, 140],
+    'Stage 2': [140, 180],
+    Crisis: [180, 220]
+  },
+  lipidGroup: {
+    Desirable: [100, 200],
+    Borderline: [200, 240],
+    High: [240, 400],
+    Extreme: [400, 450]
+  },
+  diabetesLabel: {
+    'Non-Diabetic': [0, 0.5],
+    Diabetic: [0.5, 1]
+  }
+}
+const inputKeyByDim = {
+  ageGroup: 'age',
+  bmiGroup: 'bmi',
+  bpGroup: 'sbp',
+  lipidGroup: 'chol',
+  diabetesLabel: 'diabetes'
+}
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+
 const totalGradient = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
   { offset: 0, color: '#e9edf4' },
   { offset: 1, color: '#d3dbe7' }
@@ -83,8 +141,8 @@ const noCvdGradient = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
   { offset: 1, color: '#4f84f2' }
 ])
 const cvdGradient = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-  { offset: 0, color: '#8dd31b' },
-  { offset: 1, color: '#5ea60f' }
+  { offset: 0, color: '#fb923c' },
+  { offset: 1, color: '#ea580c' }
 ])
 
 const mutedOpacity = 0.12
@@ -233,12 +291,66 @@ const matchesRowWithCombinedFilters = (row, skipDimKey) => {
     const selected = normalizeSelection(dim.key, selectedByDim.value[dim.key] || [])
 
     if (context.length && selected.length) {
-      return context.includes(value) && selected.includes(value)
+      const overlap = selected.filter(item => context.includes(item))
+      if (overlap.length) {
+        return overlap.includes(value)
+      }
+      // If local brush/click and form input conflict on the same dimension,
+      // keep form context as source of truth to avoid collapsing the row to empty.
+      return context.includes(value)
     }
     if (context.length) return context.includes(value)
     if (selected.length) return selected.includes(value)
     return true
   })
+}
+
+const clearConflictingSelectionsWithContext = () => {
+  const nextSelected = { ...selectedByDim.value }
+  const nextExpanded = { ...expandedByDim.value }
+  const nextBarIds = { ...selectedBarIdsByDim.value }
+  const nextSpans = { ...brushSpanByDim.value }
+  let changed = false
+
+  chartDimensions.forEach((dim) => {
+    const context = contextSelectionFor(dim.key)
+    if (!context.length) return
+
+    const selected = normalizeSelection(dim.key, nextSelected[dim.key] || [])
+    if (!selected.length) return
+
+    const overlap = selected.filter(item => context.includes(item))
+    const resolved = overlap.length ? overlap : []
+
+    if (!sameArray(selected, resolved)) {
+      nextSelected[dim.key] = resolved
+      changed = true
+    }
+
+    if ((nextBarIds[dim.key] || []).length) {
+      nextBarIds[dim.key] = []
+      changed = true
+    }
+
+    if (nextSpans[dim.key]) {
+      nextSpans[dim.key] = null
+      changed = true
+    }
+
+    const currentExpanded = nextExpanded[dim.key] || []
+    const filteredExpanded = currentExpanded.filter(cat => resolved.includes(cat))
+    if (!sameArray(currentExpanded, filteredExpanded)) {
+      nextExpanded[dim.key] = filteredExpanded
+      changed = true
+    }
+  })
+
+  if (!changed) return
+
+  selectedByDim.value = nextSelected
+  expandedByDim.value = nextExpanded
+  selectedBarIdsByDim.value = nextBarIds
+  brushSpanByDim.value = nextSpans
 }
 
 const rebuildBaseCategories = () => {
@@ -328,6 +440,14 @@ const buildRowDataForDim = (dim) => {
     } else {
       const total = categoryRows.length
       const cvd = categoryRows.reduce((acc, row) => acc + (row.rawValues.CVD === 1 ? 1 : 0), 0)
+      let minRaw = null
+      let maxRaw = null
+      categoryRows.forEach((row) => {
+        const raw = Number(row.rawValues?.[dim.rawKey])
+        if (!Number.isFinite(raw)) return
+        if (minRaw === null || raw < minRaw) minRaw = raw
+        if (maxRaw === null || raw > maxRaw) maxRaw = raw
+      })
 
       bars.push({
         id: `${dim.key}|${category}|macro`,
@@ -337,8 +457,8 @@ const buildRowDataForDim = (dim) => {
         total,
         cvd,
         noCvd: total - cvd,
-        minRaw: null,
-        maxRaw: null
+        minRaw,
+        maxRaw
       })
 
       labelByIndex[bars.length - 1] = shortLabel(category)
@@ -389,6 +509,7 @@ const rebuildRowData = () => {
 }
 
 const rebuildAndRender = () => {
+  clearConflictingSelectionsWithContext()
   sanitizeState()
   rebuildRowData()
   sanitizeState()
@@ -446,13 +567,173 @@ const buildRiskData = (dimKey, metric) => {
         color,
         opacity: enabled ? activeOpacity : mutedOpacity,
         borderWidth: enabled && hasBarSelected ? 0.8 : 0,
-        borderColor: metric === 'noCvd' ? '#1d4ed8' : '#65a30d',
+        borderColor: metric === 'noCvd' ? '#1d4ed8' : '#c2410c',
         shadowBlur: enabled && hasBarSelected ? 5 : 0,
-        shadowColor: metric === 'noCvd' ? 'rgba(29,78,216,0.35)' : 'rgba(101,163,13,0.35)',
+        shadowColor: metric === 'noCvd' ? 'rgba(29,78,216,0.35)' : 'rgba(194,65,12,0.35)',
         borderRadius: [0, 0, 0, 0]
       }
     }
   })
+}
+
+const resolveInputCategory = (dimKey, inputValue) => {
+  if (dimKey === 'ageGroup') {
+    if (inputValue < 40) return 'Young Adult'
+    if (inputValue < 60) return 'Middle-Aged'
+    if (inputValue < 75) return 'Senior'
+    return 'Elderly'
+  }
+
+  if (dimKey === 'bmiGroup') {
+    if (inputValue < 18.5) return 'Underweight'
+    if (inputValue < 25) return 'Healthy'
+    if (inputValue < 30) return 'Overweight'
+    if (inputValue < 35) return 'Obese I'
+    return 'Severe Obesity'
+  }
+
+  if (dimKey === 'bpGroup') {
+    if (inputValue < 90) return 'Low'
+    if (inputValue < 120) return 'Normal'
+    if (inputValue < 130) return 'Elevated'
+    if (inputValue < 140) return 'Stage 1'
+    if (inputValue < 180) return 'Stage 2'
+    return 'Crisis'
+  }
+
+  if (dimKey === 'lipidGroup') {
+    if (inputValue < 200) return 'Desirable'
+    if (inputValue < 240) return 'Borderline'
+    if (inputValue < 400) return 'High'
+    return 'Extreme'
+  }
+
+  if (dimKey === 'diabetesLabel') {
+    return inputValue >= 0.5 ? 'Diabetic' : 'Non-Diabetic'
+  }
+
+  return null
+}
+
+const getInputValueForDim = (dimKey) => {
+  const inputKey = inputKeyByDim[dimKey]
+  if (!inputKey) return null
+
+  const rawSource = props.userInputs?.[inputKey]
+  if (rawSource === null || rawSource === undefined || rawSource === '') return null
+
+  const raw = Number(rawSource)
+  if (!Number.isFinite(raw)) return null
+
+  if (dimKey === 'diabetesLabel') {
+    return clamp(raw, 0, 1)
+  }
+
+  const range = INPUT_LIMITS[inputKey]
+  if (!range) return raw
+  return clamp(raw, range[0], range[1])
+}
+
+const resolveUserMarkerIndex = (dimKey, row) => {
+  const value = getInputValueForDim(dimKey)
+  if (value === null) return null
+
+  const bars = row?.bars || []
+  if (!bars.length) return null
+
+  const targetCategory = resolveInputCategory(dimKey, value)
+  if (!targetCategory) return null
+
+  const axisIndexWithinBar = (index, bar, inputValue) => {
+    const minRaw = Number(bar?.minRaw)
+    const maxRaw = Number(bar?.maxRaw)
+    if (!Number.isFinite(minRaw) || !Number.isFinite(maxRaw) || maxRaw <= minRaw) {
+      return index
+    }
+    const ratio = clamp((inputValue - minRaw) / (maxRaw - minRaw), 0, 1)
+    const halfWidth = 0.42
+    return index - halfWidth + ratio * (halfWidth * 2)
+  }
+
+  const rangedCandidates = bars
+    .map((bar, index) => ({ bar, index }))
+    .filter(({ bar }) => !bar.isGap && bar.category === targetCategory && bar.minRaw !== null && bar.maxRaw !== null)
+
+  if (rangedCandidates.length) {
+    const inside = rangedCandidates.find(({ bar }) => value >= bar.minRaw && value <= bar.maxRaw)
+    if (inside) return axisIndexWithinBar(inside.index, inside.bar, value)
+
+    const nearest = rangedCandidates.reduce((best, item) => {
+      const mid = (item.bar.minRaw + item.bar.maxRaw) / 2
+      const dist = Math.abs(mid - value)
+      if (!best || dist < best.dist) return { item, dist }
+      return best
+    }, null)
+    return nearest?.item
+      ? axisIndexWithinBar(nearest.item.index, nearest.item.bar, value)
+      : null
+  }
+
+  const categoryBarIndex = bars.findIndex(bar => !bar.isGap && bar.category === targetCategory)
+  if (categoryBarIndex >= 0) {
+    if (dimKey === 'diabetesLabel') return categoryBarIndex
+
+    const window = CATEGORY_WINDOWS?.[dimKey]?.[targetCategory]
+    if (!window || window.length < 2) return categoryBarIndex
+
+    const [min, max] = window
+    if (!(max > min)) return categoryBarIndex
+
+    const ratio = clamp((value - min) / (max - min), 0, 1)
+    // Category axis is centered at integer index; offset lets the marker reflect
+    // the relative position inside the selected category.
+    return categoryBarIndex - 0.36 + ratio * 0.72
+  }
+
+  const anyRangedBars = bars
+    .map((bar, index) => ({ bar, index }))
+    .filter(({ bar }) => !bar.isGap && bar.minRaw !== null && bar.maxRaw !== null)
+
+  if (anyRangedBars.length) {
+    const nearest = anyRangedBars.reduce((best, item) => {
+      const mid = (item.bar.minRaw + item.bar.maxRaw) / 2
+      const dist = Math.abs(mid - value)
+      if (!best || dist < best.dist) return { item, dist }
+      return best
+    }, null)
+    return nearest?.item
+      ? axisIndexWithinBar(nearest.item.index, nearest.item.bar, value)
+      : null
+  }
+
+  const firstVisible = bars.findIndex(bar => !bar.isGap)
+  return firstVisible >= 0 ? firstVisible : null
+}
+
+const buildUserMarkLine = (markerIndex) => {
+  if (!Number.isFinite(markerIndex) || markerIndex < 0) {
+    return {
+      symbol: ['none', 'none'],
+      silent: true,
+      data: []
+    }
+  }
+
+  return {
+    symbol: ['none', 'none'],
+    silent: true,
+    precision: 2,
+    lineStyle: {
+      color: 'rgba(30,64,175,0.82)',
+      width: 1.4,
+      type: 'dashed',
+      opacity: 0.9
+    },
+    label: {
+      show: false
+    },
+    data: [{ xAxis: markerIndex }]
+  }
 }
 
 const buildMarkArea = (dimKey) => {
@@ -463,8 +744,8 @@ const buildMarkArea = (dimKey) => {
     silent: true,
     z: 6,
     itemStyle: {
-      color: 'rgba(34,197,94,0.18)',
-      borderColor: 'rgba(34,197,94,0.72)',
+      color: 'rgba(59,130,246,0.16)',
+      borderColor: 'rgba(37,99,235,0.72)',
       borderWidth: 1
     },
     data: [[
@@ -475,9 +756,9 @@ const buildMarkArea = (dimKey) => {
 }
 
 const buildOption = () => {
-  const rowHeight = 52
-  const rowGap = 7
-  const topOffset = 20
+  const rowHeight = 66
+  const rowGap = 5
+  const topOffset = 16
 
   const grids = []
   const xAxis = []
@@ -486,18 +767,31 @@ const buildOption = () => {
 
   chartDimensions.forEach((dim, rowIndex) => {
     const row = rowDataByDim.value[dim.key] || { bars: [], labelByIndex: {}, axisMax: 10 }
+    const markerIndex = resolveUserMarkerIndex(dim.key, row)
     const selectedSet = new Set(normalizeSelection(dim.key, selectedByDim.value[dim.key] || []))
-    const barSize = row.bars.length > 90
+    const barCount = row.bars.length
+    const barSize = barCount > 90
       ? 4
-      : row.bars.length > 60
-        ? 7
-        : row.bars.length > 34
-          ? 10
-          : row.bars.length > 20
-            ? 14
-            : row.bars.length > 10
-              ? 20
-              : 28
+      : barCount > 70
+        ? 5
+        : barCount > 52
+          ? 7
+          : barCount > 36
+            ? 9
+            : barCount > 24
+              ? 12
+              : barCount > 16
+                ? 15
+                : barCount > 10
+                  ? 20
+                  : 30
+    const barCategoryGap = barCount > 32
+      ? '28%'
+      : barCount > 20
+        ? '18%'
+        : barCount > 12
+          ? '12%'
+          : '8%'
 
     grids.push({
       left: 84,
@@ -514,9 +808,10 @@ const buildOption = () => {
       axisLine: { lineStyle: { color: 'rgba(71,85,105,0.28)' } },
       axisLabel: {
         interval: 0,
-        margin: 9,
+        margin: 7,
         fontSize: 9,
         fontWeight: 700,
+        hideOverlap: true,
         color: '#475569',
         formatter: (_, idx) => {
           const label = row.labelByIndex[idx] || ''
@@ -532,7 +827,7 @@ const buildOption = () => {
             borderRadius: 4,
             borderWidth: 1,
             borderColor: 'rgba(148,163,184,0.18)',
-            padding: [1, 8, 1, 8],
+            padding: [1, 6, 1, 6],
             fontSize: 9.5,
             fontWeight: 700,
             lineHeight: 16
@@ -543,7 +838,7 @@ const buildOption = () => {
             borderRadius: 4,
             borderWidth: 1,
             borderColor: 'rgba(37,99,235,0.55)',
-            padding: [1, 8, 1, 8],
+            padding: [1, 6, 1, 6],
             fontSize: 9.5,
             fontWeight: 700,
             lineHeight: 16
@@ -587,11 +882,12 @@ const buildOption = () => {
       xAxisIndex: rowIndex,
       yAxisIndex: rowIndex,
       barWidth: barSize,
-      barMaxWidth: 30,
-      barCategoryGap: '8%',
+      barMaxWidth: 32,
+      barCategoryGap,
       barGap: '-100%',
       data: buildTotalData(dim.key),
       markArea: buildMarkArea(dim.key),
+      markLine: buildUserMarkLine(markerIndex),
       z: 1
     })
 
@@ -603,8 +899,8 @@ const buildOption = () => {
       yAxisIndex: rowIndex,
       stack: `risk-${dim.key}`,
       barWidth: barSize,
-      barMaxWidth: 30,
-      barCategoryGap: '8%',
+      barMaxWidth: 32,
+      barCategoryGap,
       data: buildRiskData(dim.key, 'noCvd'),
       z: 3
     })
@@ -617,9 +913,8 @@ const buildOption = () => {
       yAxisIndex: rowIndex,
       stack: `risk-${dim.key}`,
       barWidth: barSize,
-      barMaxWidth: 30,
-      barCategoryGap: '8%',
-      barMinHeight: 5,
+      barMaxWidth: 32,
+      barCategoryGap,
       data: buildRiskData(dim.key, 'cvd'),
       z: 3
     })
@@ -630,6 +925,7 @@ const buildOption = () => {
     animationDurationUpdate: 120,
     animationEasing: 'cubicOut',
     backgroundColor: 'transparent',
+    color: ['#d3dbe7', '#4f84f2', '#ea580c'],
     toolbox: {
       show: false
     },
@@ -693,8 +989,8 @@ const buildOption = () => {
       toolbox: [],
       brushStyle: {
         borderWidth: 2,
-        borderColor: '#16a34a',
-        color: 'rgba(34,197,94,0.22)'
+        borderColor: '#2563eb',
+        color: 'rgba(59,130,246,0.2)'
       }
     },
     grid: grids,
@@ -988,6 +1284,14 @@ watch(
 )
 
 watch(
+  () => props.userInputs,
+  () => {
+    renderChart()
+  },
+  { deep: true }
+)
+
+watch(
   () => props.clearSignal,
   () => {
     clearAllSelections()
@@ -1000,7 +1304,8 @@ watch(
 <style scoped>
 .range-wrapper {
   width: 100%;
-  height: 400px;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   border: 0;
@@ -1017,7 +1322,8 @@ watch(
   height: 36px;
   display: flex;
   align-items: center;
-  border-top: 1px solid rgba(148, 163, 184, 0.24);
+  border-top: 1px solid rgba(148, 163, 184, 0.28);
+  background: linear-gradient(180deg, rgba(248, 251, 255, 0.78), rgba(244, 248, 253, 0.78));
   padding: 0 10px;
 }
 
@@ -1039,7 +1345,7 @@ watch(
 }
 
 .selection-state.active {
-  color: #166534;
+  color: #1e40af;
   font-weight: 600;
 }
 

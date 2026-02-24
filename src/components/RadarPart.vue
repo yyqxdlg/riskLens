@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div ref="radarChart" style="width: 100%; height: 400px;" />
+  <div class="radar-root">
+    <div ref="radarChart" class="radar-canvas" />
   </div>
 </template>
 
@@ -204,4 +204,15 @@ watch(
 </script>
 
 <style scoped>
+.radar-root {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.radar-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
 </style>
