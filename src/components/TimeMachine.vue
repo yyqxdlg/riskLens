@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import {onMounted, ref} from 'vue'
+import { onMounted, onBeforeUnmount, nextTick, ref, watch } from 'vue'
 import * as echarts from 'echarts';
 
 
@@ -18,11 +18,10 @@ import * as echarts from 'echarts';
     rawGroupData: Array,
 
   })
-  console.log(props)
-  const open = ref(props.modalState.open)
-  const userAge = ref(props.modalState.userAge)
-  const otherInfo = ref(props.modalState.otherInfo)
-  const tableData = ref(props.rawGroupData)
+  const open = ref(false)
+  const userAge = ref(null)
+  const otherInfo = ref({})
+  const tableData = ref([])
   const emit = defineEmits([ "colseTimeModal" ]);
 
   const closeModal = ()=>{
@@ -158,11 +157,49 @@ import * as echarts from 'echarts';
 
     myChart.setOption(option, true); 
   };
-  const filterData = ref(null)
-  onMounted(()=>{
-    // open.value = 
-   filterData.value = runGetOlderSimulation(userAge.value, otherInfo.value,tableData.value)
-   renderOlderChart(filterData.value)
+  const syncStateFromProps = () => {
+    open.value = !!props.modalState?.open
+    userAge.value = Number(props.modalState?.userAge)
+    otherInfo.value = props.modalState?.otherInfo || {}
+    tableData.value = props.rawGroupData || []
+  }
+
+  const refreshChart = async () => {
+    if (!open.value) return
+    if (!Number.isFinite(userAge.value)) return
+    await nextTick()
+    const simulationData = runGetOlderSimulation(userAge.value, otherInfo.value, tableData.value)
+    renderOlderChart(simulationData)
+  }
+
+  watch(
+    () => props.modalState,
+    async () => {
+      syncStateFromProps()
+      await refreshChart()
+    },
+    { deep: true, immediate: true }
+  )
+
+  watch(
+    () => props.rawGroupData,
+    async () => {
+      tableData.value = props.rawGroupData || []
+      await refreshChart()
+    },
+    { deep: true }
+  )
+
+  onMounted(async () => {
+    syncStateFromProps()
+    await refreshChart()
+  })
+
+  onBeforeUnmount(() => {
+    if (myChart) {
+      myChart.dispose()
+      myChart = null
+    }
   })
 
 </script>

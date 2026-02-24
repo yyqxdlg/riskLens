@@ -1,7 +1,6 @@
 <template>
-  <div>
-    
-    <div ref="summaryBar" style="width: 100%; height: 400px;"></div>          
+  <div class="summary-root">
+    <div ref="summaryBar" class="summary-canvas"></div>
   </div>
 </template>
 
@@ -33,7 +32,6 @@
     const uCVD = processArray.value.unselectedCVD.length;
     const sNoCVD = processArray.value.selectedNoCVD.length;
     const uNoCVD = processArray.value.unselectedNoCVD.length;
-    console.log(sCVD, uCVD, 'uCVD')
     var option;
 
     option = {
@@ -133,8 +131,6 @@
     };
     option &&myChart.setOption(option, true);
     // 5. 响应式调整
-    console.log(option, 'option')
-   
   }
 
 
@@ -149,7 +145,6 @@
    
     if(newValue){
       processArray.value = props.processObject
-      console.log('4444444', newValue)
       createSummaryBar()
     }
   },{ deep: true })
@@ -160,8 +155,6 @@
       
     }, 1000)
    
-    console.log(processArray.value, 'processArray.value')
-    
   });
 
   onBeforeUnmount(() => {
@@ -176,5 +169,15 @@
 </script>
 
 <style  scoped>
+.summary-root {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
 
+.summary-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
 </style>

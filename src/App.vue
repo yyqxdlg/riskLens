@@ -1,5 +1,5 @@
 <template>
-    <a-tabs v-model:activeKey="activeKey">
+    <a-tabs v-model:activeKey="activeKey" class="app-tabs">
       <a-tab-pane key="1">
         <template #tab>
           <span>
@@ -7,30 +7,35 @@
             Home
           </span>
         </template>
-        <div>
-          <div class="uesrForm">
-           <UserForm :clearSignal="clearSignal" @updateFilters="onFormFiltersUpdate"></UserForm>
-          </div>
-          <div class="topFilterRow">
+        <div class="page-shell">
+          <section class="panel-card form-card">
+            <UserForm
+              :clearSignal="clearSignal"
+              @updateFilters="onFormFiltersUpdate"
+              @updateUserInputs="onUserInputsUpdate"
+              @openTimeMachine="showOlderModal"
+            />
+          </section>
+          <section class="panel-card topFilterRow">
             <div class="topFilterContent">
               <TopFilter :activeFilters="activeFilters"></TopFilter>
             </div>
             <div class="topActions">
               <a-button class="clearAllBtn" @click="clearAllFilters">Clear All Filters</a-button>
-              <a-button class="timeMachineBtn" @click="showOlderModal">Health Time Machine</a-button>
             </div>
-          </div>
-          <a-flex class="mainChartsRow">
-            <div class="rangePart">
+          </section>
+          <div class="mainChartsRow">
+            <section class="panel-card rangePart">
               <RangePart
                 :rawGroupData="rawGroupData"
                 :contextFilters="formFilters"
+                :userInputs="userInputs"
                 :clearSignal="clearSignal"
                 @updateFilters="onRangeFiltersUpdate"
               />
-            </div>
+            </section>
 
-            <div class="rightPart">
+            <section class="panel-card rightPart">
               <div class="twoContainer">
                 <div class="radarPart">
                   <RadarPart :processObject="processArray" ></RadarPart>
@@ -39,9 +44,8 @@
                   <SummaryPart :processObject="processArray" ></SummaryPart>
                 </div>
               </div>
-            </div>
-            
-          </a-flex>
+            </section>
+          </div>
           <TimeMachine v-if="open" :rawGroupData="rawGroupData" :modalState="modalState"  @colseTimeModal="colseTimeModal"></TimeMachine>
         </div>
       </a-tab-pane>
@@ -98,6 +102,14 @@ import TimeMachine from './components/TimeMachine.vue';
   const rangeFilters = ref(emptyFilterMap());
   const formFilters = ref(emptyFilterMap());
   const clearSignal = ref(0);
+  const emptyUserInputs = () => ({
+    age: null,
+    bmi: null,
+    sbp: null,
+    chol: null,
+    diabetes: null
+  })
+  const userInputs = ref(emptyUserInputs())
 
   const processArray = ref(null)
 
@@ -111,7 +123,10 @@ import TimeMachine from './components/TimeMachine.vue';
     if (!left.length) return right;
     if (!right.length) return left;
     const inter = left.filter(item => right.includes(item));
-    return inter;
+    if (inter.length) return inter;
+    // When range brush and form input conflict on the same dimension,
+    // keep form input as the effective filter to avoid falling back to "no filter".
+    return right;
   };
 
   const rebuildActiveFilters = () => {
@@ -134,9 +149,14 @@ import TimeMachine from './components/TimeMachine.vue';
     rebuildActiveFilters();
   };
 
+  const onUserInputsUpdate = (val) => {
+    userInputs.value = { ...userInputs.value, ...val };
+  };
+
   const clearAllFilters = () => {
     formFilters.value = emptyFilterMap();
     rangeFilters.value = emptyFilterMap();
+    userInputs.value = emptyUserInputs();
     rebuildActiveFilters();
     clearSignal.value += 1;
   };
@@ -185,13 +205,22 @@ import TimeMachine from './components/TimeMachine.vue';
         
       }
     })
+  const getPreferredUserAge = () => {
+    if (Number.isFinite(userInputs.value.age)) {
+      return Math.round(userInputs.value.age)
+    }
+    if (rawGroupData.value.length) {
+      const avg = rawGroupData.value.reduce((acc, row) => acc + Number(row.rawValues?.age || 0), 0) / rawGroupData.value.length
+      return Math.round(avg)
+    }
+    return 50
+  }
+
   const showOlderModal = () => {
     modalState.value = {
       open: true,
-      userAge: 47,
-      otherInfo: {
-
-      }
+      userAge: getPreferredUserAge(),
+      otherInfo: { ...activeFilters.value }
 
     }
     open.value = true
@@ -200,6 +229,20 @@ import TimeMachine from './components/TimeMachine.vue';
     open.value = false
     
   }
+
+  watch(
+    () => [userInputs.value.age, activeFilters.value],
+    () => {
+      if (!open.value) return
+      modalState.value = {
+        ...modalState.value,
+        open: true,
+        userAge: getPreferredUserAge(),
+        otherInfo: { ...activeFilters.value }
+      }
+    },
+    { deep: true }
+  )
   onMounted(() => {
     
     rawGroupData.value = groupData
@@ -213,62 +256,141 @@ import TimeMachine from './components/TimeMachine.vue';
 
 <style scoped>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Avenir Next", "SF Pro Text", "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  color: #1f3b53;
+  min-height: 100vh;
+  background:
+    radial-gradient(120% 70% at 10% -10%, rgba(59, 130, 246, 0.13), transparent 60%),
+    radial-gradient(110% 70% at 95% 0%, rgba(20, 184, 166, 0.09), transparent 60%),
+    linear-gradient(180deg, #f4f9ff 0%, #f8fbff 36%, #f5f8fc 100%);
 }
 
-.rangePart{
-  width: 45%;
-  height: 400px;
+:deep(.ant-tabs-nav) {
+  margin-bottom: 12px;
+  padding: 0 14px;
 }
-.rightPart{
-  width: 55%;
-  height: 400px;
+
+.page-shell {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 16px 14px;
   display: flex;
-  align-items: stretch;
+  flex-direction: column;
+  gap: 12px;
 }
-.mainChartsRow{
-  height: 400px;
-  align-items: stretch;
+
+.panel-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.23);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
 }
-.topFilterRow{
+
+.form-card {
+  padding: 12px 14px 10px;
+}
+
+.topFilterRow {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 6px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
 }
-.topFilterContent{
+
+.topFilterContent {
   flex: 1;
   min-width: 0;
 }
-.topActions{
-  margin-top: 10px;
+
+.topActions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.clearAllBtn{
-  border-radius: 6px;
+
+.clearAllBtn {
+  border-radius: 10px;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: #f8fbff;
+  font-weight: 600;
 }
-.timeMachineBtn{
-  border-radius: 6px;
+
+.clearAllBtn:hover {
+  border-color: #93c5fd;
+  color: #1e40af;
+  background: #f0f7ff;
 }
-.twoContainer{
+
+.mainChartsRow {
+  display: grid;
+  grid-template-columns: minmax(560px, 0.88fr) minmax(660px, 1.12fr);
+  gap: 12px;
+  min-height: 456px;
+}
+
+.rangePart {
+  min-height: 456px;
+  padding: 8px 8px 4px;
+}
+
+.rightPart {
+  min-height: 456px;
+  padding: 8px;
+}
+
+.twoContainer {
   display: flex;
   width: 100%;
   height: 100%;
   align-items: stretch;
+  gap: 6px;
 }
-.radarPart{
-  width: 50%;
+
+.radarPart {
+  width: 54%;
   height: 100%;
+  min-height: 0;
 }
-.summaryPart{
-  width: 50%;
+
+.summaryPart {
+  width: 46%;
   height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 1260px) {
+  .mainChartsRow {
+    grid-template-columns: 1fr;
+  }
+
+  .rangePart,
+  .rightPart {
+    min-height: 460px;
+  }
+}
+
+@media (max-width: 900px) {
+  .topFilterRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topActions {
+    justify-content: flex-end;
+  }
+
+  .twoContainer {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .radarPart,
+  .summaryPart {
+    width: 100%;
+    height: 50%;
+  }
 }
 </style>

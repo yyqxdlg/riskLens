@@ -1,70 +1,132 @@
-  <template>
-  <div>
-   <div class="topFilter">
-      <div v-for="(value, key, index) in activeFiltersData" :key="key" class="filterContainer" >
-        <div class="filterLable"  v-if="value.length">
-          {{lableArray[index]}}:
-        </div>
-        <div class="filerContentBox" v-if="value.length">
-          <div v-for="sItem in value" :key="'sItem'+sItem" class="filterItem">
-            <a-tag :bordered="false" :color="colorArray[index]">{{sItem}}</a-tag>
-          </div>
+<template>
+  <div class="top-filter">
+    <template v-if="activeRows.length">
+      <div v-for="row in activeRows" :key="row.key" class="filter-row">
+        <span class="filter-label">{{ row.label }}:</span>
+        <div class="chip-list">
+          <span
+            v-for="item in row.values"
+            :key="`${row.key}-${item}`"
+            class="chip"
+            :class="`chip-${row.key}`"
+          >
+            {{ item }}
+          </span>
         </div>
       </div>
-    </div>
-            
+    </template>
+    <span v-else class="empty-text">No active filters. Enter values or brush bars to start.</span>
   </div>
 </template>
 
 <script setup>
-import {ref, watch} from 'vue'
-  const props = defineProps({  
-    activeFilters: Object,
-  })
-  // const activeFiltersData = ref({
-  //   ageGroup: ['Middle-Aged', 'Senior', 'Elderly'],   // 可能包含: {"Middle-Aged", "Senior"}
-  //   bmiGroup: ['Obese I'],   // 可能包含: {"Obese I"}
-  //   bpGroup: ['Normal', 'Elevated'],     // 
-  //   lipidGroup: ['Desirable', 'Borderline', 'Extreme'],
-  //   diabetesLabel: ['Diabetic'],
-  // });
-  const activeFiltersData = ref(props.activeFilters)
-  console.log(activeFiltersData.value, 'activeFiltersData')
-  const lableArray = ['Age', 'BMI', 'SBP', 'CHOL', 'DIABETES']
-  const colorArray = ['green', 'cyan', 'blue', 'volcano' , 'purple']
-  watch(() => props.activeFilters, (newValue) => {
-    if(newValue && !newValue.ageGroup.length && !newValue.bmiGroup.length&& !newValue.bpGroup.length&& !newValue.lipidGroup.length&& !newValue.diabetesLabel.length){
-      activeFiltersData.value = {
-        ageGroup: ['Young Adult','Middle-Aged', 'Senior', 'Elderly'],   // 可能包含: {"Middle-Aged", "Senior"}
-        bmiGroup: ['Underweight', 'Healthy', 'Overweight', 'Obese I', 'Severe Obesity'],   // 可能包含: {"Obese I"}
-        bpGroup: ['Low', 'Normal', 'Elevated', 'Stage 1', 'Stage 2','Crisis'],     // 
-        lipidGroup: ['Desirable', 'Borderline','High', 'Extreme'],
-        diabetesLabel: ['Non-Diabetic', 'Diabetic'],
-      };
-    }else{
-      activeFiltersData.value = newValue;
-    }
-    
-    
-  })
+import { computed } from 'vue'
+
+const props = defineProps({
+  activeFilters: {
+    type: Object,
+    default: () => ({
+      ageGroup: [],
+      bmiGroup: [],
+      bpGroup: [],
+      lipidGroup: [],
+      diabetesLabel: []
+    })
+  }
+})
+
+const filterMeta = [
+  { key: 'ageGroup', label: 'Age' },
+  { key: 'bmiGroup', label: 'BMI' },
+  { key: 'bpGroup', label: 'SBP' },
+  { key: 'lipidGroup', label: 'CHOL' },
+  { key: 'diabetesLabel', label: 'Diabetes' }
+]
+
+const activeRows = computed(() =>
+  filterMeta
+    .map(meta => ({
+      ...meta,
+      values: Array.isArray(props.activeFilters?.[meta.key]) ? props.activeFilters[meta.key] : []
+    }))
+    .filter(row => row.values.length > 0)
+)
 </script>
 
 <style scoped>
-.topFilter{
+.top-filter {
   width: 100%;
+  min-height: 34px;
   display: flex;
   flex-wrap: wrap;
-  padding: 10px;
+  align-items: center;
+  gap: 8px 10px;
 }
-.filterContainer{
+
+.filter-row {
   display: flex;
   align-items: center;
-  margin: 5px;
+  gap: 6px;
+  min-width: 0;
 }
-.filerContentBox{
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.chip-list {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
-.filterItem{
-  margin: 3px 0 3px 5px;
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.chip-ageGroup {
+  background: #ecfdf3;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.chip-bmiGroup {
+  background: #ecfeff;
+  color: #0f766e;
+  border-color: #bae6fd;
+}
+
+.chip-bpGroup {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.chip-lipidGroup {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.chip-diabetesLabel {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border-color: #ddd6fe;
+}
+
+.empty-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
 }
 </style>
