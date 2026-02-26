@@ -83,7 +83,7 @@ import RadarPart from './components/RadarPart.vue'
 import RangePart from './components/RangePart.vue'
 import SummaryPart from './components/SummaryPart.vue'
 import TopFilter from './components/TopFilter.vue';
-import groupData from '@/assets/riskless_data.json';
+import groupData from '@/assets/riskless_data_all_years.json';
 import TimeMachine from './components/TimeMachine.vue';
   
   const rawGroupData = ref([])
