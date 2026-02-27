@@ -150,8 +150,11 @@ const initChart = () => {
     tooltip: { trigger: 'item' },
     legend: {
       data: ['CVD Avg', 'Healthy Avg', 'My Data'],
-      bottom: 5,
-      textStyle: { fontSize: 10 }
+      // bottom: 5,
+      textStyle: { fontSize: 10 },
+      orient: 'vertical',
+      right: 10,
+      top: 'center'
     },
     radar: {
       indicator: metrics.map(m => ({ name: m.name, max: m.max })),
@@ -291,7 +294,7 @@ const healthSummary = computed(() => {
 
   if (sNo === 0) {
     // majorRisksExist.value = 0
-    return "⚠️ Insufficient Data: No clinical peers match your current filters. Unable to perform benchmark comparison. (无法判断：当前筛选条件下没有匹配的样本，无法进行基准对比。)";
+    return "⚠️ Insufficient Data: No clinical peers match your current filters. Unable to perform benchmark comparison. ";
   }
 
   // 3. 执行对比逻辑 (只有在有样本时才运行)
@@ -308,13 +311,13 @@ const healthSummary = computed(() => {
   if (majorRisks.length === 0) {
     // majorRisksExist.value = 1
     
-    return "✅ Your clinical profile is within the healthy benchmark. Your metrics align well with the non-CVD population. (您的身体很健康，各项指标均处于健康基准线内。)";
+    return "✅ Your clinical profile is within the healthy benchmark. Your metrics align well with the non-CVD population. ";
   } else {
     const topRisk = majorRisks[0];
     const riskLevel = topRisk.diff > 0.3 ? 'significantly' : 'slightly';
     // majorRisksExist.value = 2
 
-    return `⚠️ Your profile shows a ${riskLevel} deviation in ${topRisk.name} compared to the healthy average. Focus on this axis for risk mitigation. (分析显示您的 ${topRisk.name} 偏离健康均值，请关注该指标的改善。)`;
+    return `⚠️ Your profile shows a ${riskLevel} deviation in ${topRisk.name} compared to the healthy average. Focus on this axis for risk mitigation.`;
   }
 });
 </script>
@@ -355,7 +358,7 @@ const healthSummary = computed(() => {
 .section-title {
   margin: 0;
   font-size: 14px;
-  color: #1e293b;
+  color: #4f05b7;
   text-transform: uppercase;
   font-weight: 700;
 }
@@ -486,7 +489,7 @@ const healthSummary = computed(() => {
 .section-title {
   margin: 0;
   font-size: 14px;
-  color: #1e293b; /* 您指定的颜色 */
+  color: #4f05b7; /* 您指定的颜色 */
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.5px;
