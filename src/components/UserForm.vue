@@ -3,8 +3,8 @@
     <a-form
       :model="formState"
       name="userForm"
-      :label-col="{ span: 7 }"
-      :wrapper-col="{ span: 17 }"
+      :label-col="{ span: 8 }"
+      :wrapper-col="{ span: 16 }"
       autocomplete="off"
       class="user-form-grid"
     >
@@ -14,9 +14,19 @@
             :label="field.label"
             :name="field.key"
           >
+          <div class="iconParent">
             <a-input
               v-model:value="formState[field.key]"
             />
+
+            
+             <a-tooltip :title="field.description" color="#108ee9">
+              
+              <InfoCircleTwoTone style="padding-left: 6px;"  />
+            </a-tooltip>
+          </div>  
+          
+            
           </a-form-item>
         </a-col>
         
@@ -24,13 +34,19 @@
       <a-row :gutter="16">
         <a-col :span="6">
           <a-form-item label="hasDiabetes" name="diabetesSelections">
+            <div class="iconParent">
             <a-select
               v-model:value="formState.diabetesSelections"
               :options="diabetesOptions"
             />
+             <a-tooltip color="#108ee9" title="A measure of blood sugar levels. Having diabetes can significantly increase the risk of heart disease by damaging blood vessels over time.">
+
+              <InfoCircleTwoTone style="padding-left: 6px;"   />
+            </a-tooltip>
+          </div>
           </a-form-item>
         </a-col>
-        <a-col :span="6">
+        <a-col >
           <a-button style="margin:0 6px"  type="primary" @click="handleConfirm">confirm</a-button>
           <a-button style="margin:0 6px" type="primary" @click="handleReset">reset</a-button>
           <a-tooltip color="#87d068" title="See how risk trends evolve for people like you over the next many years.">
@@ -56,6 +72,8 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
 import { message } from 'ant-design-vue';
+import {InfoCircleTwoTone}  from '@ant-design/icons-vue';
+
 
 const props = defineProps({
   clearSignal: {
@@ -67,10 +85,10 @@ const props = defineProps({
 const emit = defineEmits(['updateFilters', 'updateUserInputs', 'openTimeMachine'])
 
 const numericFields = [
-  { key: 'age', label: 'Age',description:'Age:' },
-  { key: 'bmi', label: 'BMI',description: 'Body Mass Index: A measure of body composition based on height and weight.' },
-  { key: 'sbp', label: 'SBP' ,description:'Systolic Blood Pressure: The pressure in your arteries when your heart beats.'},
-  { key: 'chol', label: 'CHOL',description:'Total Cholesterol: The total amount of fat substances found in your blood.' }
+  { key: 'age', label: 'Age',description:'Your current age, which acts as a primary independent risk factor for cardiovascular health.' },
+  { key: 'bmi', label: 'BMI',description: 'A measure of body composition that helps identify if your weight is in a healthy proportion to your height.' },
+  { key: 'sbp', label: 'SBP' ,description:'The peak pressure in your arteries created when your heart beats and pumps blood.'},
+  { key: 'chol', label: 'CHOL',description:'The total amount of fats (lipids) found in your blood, used to assess the risk of plaque buildup.' }
 ]
 
 const diabetesOptions = [
@@ -200,6 +218,7 @@ const openTimeMachine = () => {
     duration: 3, // 停止 3 秒后消失
   });
   }else{
+    handleConfirm()
     emit('openTimeMachine')
   }
   
@@ -314,5 +333,12 @@ onMounted(()=>{
   .actions-row {
     flex-wrap: wrap;
   }
+}
+
+.iconParent {
+    display: flex;
+    align-items: center;
+
+
 }
 </style>

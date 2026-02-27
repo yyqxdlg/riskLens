@@ -19,7 +19,7 @@
             increase the concentration of Cardiovascular Disease (CVD).
           </p>
           <p v-else>
-            Please select categories from the left or adjust the sliders to begin peer-group analysis.
+            No matching peers found for these criteria. Please adjust your sliders or categories for peer-group analysis.
           </p>
         </div>
 
@@ -103,7 +103,7 @@ const initChart = () => {
         name: 'Inner: Selected Subgroup',
         type: 'pie',
         selectedMode: 'single',
-        radius: ['30%', '45%'],
+        radius: ['20%', '35%'],
         label: {
           position: 'inner',
           fontSize: 10,
@@ -184,9 +184,10 @@ onBeforeUnmount(() => {
 
 .section-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   color: #003a8c;
   text-transform: uppercase;
+  font-weight: 700;
   letter-spacing: 0.5px;
 }
 

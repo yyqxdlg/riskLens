@@ -3,7 +3,7 @@
       <a-tab-pane key="1">
         <template #tab>
           <span>
-            <apple-outlined/>
+            <HeartTwoTone two-tone-color="#ff4d4f" />
             Main
           </span>
         </template>
@@ -53,20 +53,20 @@
       <a-tab-pane key="2">
         <template #tab>
           <span>
-            <BulbTwoTone />
+            <BulbTwoTone two-tone-color="#52c41a" />
             About
           </span>
         </template>
-        Tab 2
+        <AboutPage></AboutPage>
       </a-tab-pane>
       <a-tab-pane key="3">
         <template #tab>
           <span>
-            <android-outlined />
+            <IdcardTwoTone two-tone-color="#1890ff" />
             Team
           </span>
         </template>
-        Tab 2
+        <TeamPage></TeamPage>
       </a-tab-pane>
     </a-tabs>
   
@@ -78,7 +78,7 @@
 <script setup>
 // import DashBoard from './components/DashBoard.vue'
 import {ref, onMounted, watch} from 'vue'
-import { AppleOutlined, AndroidOutlined ,BulbTwoTone} from '@ant-design/icons-vue';
+import { HeartTwoTone, IdcardTwoTone ,BulbTwoTone} from '@ant-design/icons-vue';
 import UserForm from './components/UserForm.vue'
 import RadarPart from './components/RadarPart.vue'
 import RangePart from './components/RangePart.vue'
@@ -86,7 +86,10 @@ import SummaryPart from './components/SummaryPart.vue'
 import TopFilter from './components/TopFilter.vue';
 import groupData from '@/assets/riskless_data_all_years.json';
 import TimeMachine from './components/TimeMachine.vue';
-  
+import AboutPage from './components/AboutPage.vue';
+import TeamPage from './components/TeamPage.vue';
+
+
   const rawGroupData = ref([])
 
   const emptyFilterMap = () => ({
@@ -349,17 +352,18 @@ import TimeMachine from './components/TimeMachine.vue';
   height: 100%;
   align-items: stretch;
   gap: 6px;
+  justify-content: space-around;
 }
 
 .radarPart {
-  width: 50%;
-  height: 800px;
+  width: 48%;
+  height: 700px;
   min-height: 0;
 }
 
 .summaryPart {
-  width: 50%;
-  height: 800px;
+  width: 48%;
+  height: 700px;
   min-height: 0;
 }
 
