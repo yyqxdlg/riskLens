@@ -1,183 +1,257 @@
 <template>
-  <div class="summary-root">
-    <div ref="summaryBar" class="summary-canvas"></div>
+  <div class="summary-container">
+    <div class="guidance-section">
+      <div class="header-row">
+        <span class="pulse-icon"></span>
+        <h3 class="section-title">Live Analysis Guidance</h3>
+      </div>
+
+      <div class="analysis-box">
+        <!-- <p class="filter-status">
+          <strong>Active Scope:</strong> {{ activeFiltersDescription || 'General Population (No filters applied)' }}
+        </p> -->
+        
+        <div class="dynamic-narrative">
+          <p v-if="totalSelected > 0">
+            You have isolated a subgroup of <strong>{{ totalSelected.toLocaleString() }}</strong> individuals. 
+            The <strong>Inner Ring</strong> shows the risk composition of this specific group. 
+            Compare it to the <strong>Outer Ring</strong> (Background) to see if your selected factors (like BMI or Age) 
+            increase the concentration of Cardiovascular Disease (CVD).
+          </p>
+          <p v-else>
+            Please select categories from the left or adjust the sliders to begin peer-group analysis.
+          </p>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="label">Subgroup CVD</span>
+            <span class="value red">{{ selectedCVDCount }}</span>
+          </div>
+          <div class="metric-card">
+            <span class="label">Subgroup Healthy</span>
+            <span class="value blue">{{ selectedHealthyCount }}</span>
+          </div>
+          <div class="metric-card">
+            <span class="label">Prevalence Rate</span>
+            <span class="value purple">{{ prevalenceRate }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div ref="donutChartRef" class="chart-canvas"></div>
+    
+    <div class="chart-legend-hint">
+      <small>* Inner Ring: Current Selection | Outer Ring: Total Background Population</small>
+    </div>
   </div>
 </template>
 
 <script setup>
-  // import { setTimeout } from 'core-js';
-  import * as echarts from 'echarts';
-  import {ref, onMounted, onBeforeUnmount, watch} from 'vue';
-  const props = defineProps({  
-   
-    processObject: Object,
+import * as echarts from 'echarts';
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 
-  })
-  
-  const summaryBar = ref(null);
-  let myChart = null;
-
-  const createSummaryBar = () => {
-    if (!summaryBar.value) return;
-
-    // 1. 如果已经有实例了，先销毁它
-    if (myChart) {
-      myChart.dispose(); 
-      myChart = null; // 确保引用清空
-    }
-    // 3. 初始化
-    myChart = echarts.init(summaryBar.value);
-    // 4. 配置图表
-    const sCVD = processArray.value.selectedCVD.length;
-    const uCVD = processArray.value.unselectedCVD.length;
-    const sNoCVD = processArray.value.selectedNoCVD.length;
-    const uNoCVD = processArray.value.unselectedNoCVD.length;
-    var option;
-
-    option = {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow'
-        },
-        formatter: (params) => {
-        // params[0] 是 Selected 系列, params[1] 是 Unselected 系列
-        const selected = params[0].value;
-        const unselected = params[1].value;
-        const total = selected + unselected;
-        const percentage = total > 0 ? ((selected / total) * 100).toFixed(1) : 0;
-        const colorCircle = (color) => `<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:${color};"></span>`;
-
-        return `
-          <div style="font-weight:bold; margin-bottom:5px;">${params[0].name} Group</div>
-          ${colorCircle(params[0].color)} <b>Selected:</b> ${selected} <br/>
-          ${colorCircle('#d9d9d9')} <b>Unselected:</b> ${unselected} <br/>
-          <hr style="margin: 5px 0; border:0; border-top:1px solid #eee;"/>
-          <b>Total:</b> ${total} <br/>
-          <b>Rate:</b> ${percentage}%
-        `;
-      }
-      },
-      grid: {
-        top: '15%',
-        left: '10%',
-        right: '10%',
-        bottom: '10%',
-        containLabel: true
-      },
-      title: {
-        text: 'subGroup Distribution'
-      },
-      legend: {
-        data: ['CVD-Selected', 'non-CVD-Selected', 'Unselected']
-      },
-      xAxis: [
-        {
-          type: 'category',
-          data: ['CVD', 'non-CVD']
-        }
-      ],
-      yAxis: [
-        {
-          type: 'value'
-        }
-      ],
-      series: [
-        {
-          name: 'Selected',
-          type: 'bar',
-          stack: 'all',
-          itemStyle: { 
-           color: (params) => {
-            // params.dataIndex === 0 是 CVD 柱子，1 是 non-CVD 柱子
-            return params.dataIndex === 0 ? '#ff4d4f' : '#1890ff';
-          }
-          },
-          data: [sCVD, sNoCVD], // [CVD位置的值, nonCVD位置的值],
-          label:{
-            show:true,
-            position:'top',
-            formatter: (params) => params.value > 0 ? params.value : ''
-          }
-        },
-        {
-          name: 'Unselected',
-          type: 'bar',
-          stack: 'all',
-          itemStyle: { color: '#d9d9d9' }, // 灰色
-          data: [uCVD, uNoCVD],
-          label:{
-            show:true,
-            position:'top',
-            formatter: (params) => params.value > 0 ? params.value : ''
-          }
-        },
-        {
-        name: 'CVD-Selected',
-        type: 'bar',
-        stack: 'all',
-        itemStyle: { color: '#ff4d4f' },
-        data: [] // 不填数据，不影响画图
-      },
-      {
-        name: 'non-CVD-Selected',
-        type: 'bar',
-        stack: 'all',
-        itemStyle: { color: '#1890ff' },
-        data: []
-      }
-      
-      ]
-    };
-    option &&myChart.setOption(option, true);
-    // 5. 响应式调整
-  }
-
-
-  const processArray = ref({
+const props = defineProps({
+  processObject: {
+    type: Object,
+    default: () => ({
       selectedCVD: [],
       selectedNoCVD: [],
       unselectedCVD: [],
       unselectedNoCVD: []
     })
+  },
+  activeFiltersDescription: String
+});
 
-  watch(() => props.processObject, (newValue)=>{
-   
-    if(newValue){
-      processArray.value = props.processObject
-      createSummaryBar()
-    }
-  },{ deep: true })
-  onMounted(() => {
-    setTimeout(()=>{
-      processArray.value = props.processObject
-      createSummaryBar();
-      
-    }, 1000)
-   
-  });
+const donutChartRef = ref(null);
+let myChart = null;
 
-  onBeforeUnmount(() => {
-    // 6. 销毁实例
-    if (myChart) {
-     myChart.dispose();
-      
-    }
-    });
+// Computed Statistics
+const selectedCVDCount = computed(() => {
+  console.log(props, 'props')
+  return props.processObject ? (props.processObject?.selectedCVD || []).length : 0  
+  }
+) ;
+const selectedHealthyCount = computed(() => props.processObject ?(props.processObject?.selectedNoCVD || []).length : 0);
+const totalSelected = computed(() => selectedCVDCount.value + selectedHealthyCount.value);
+const prevalenceRate = computed(() => {
+  return totalSelected.value > 0 
+    ? ((selectedCVDCount.value / totalSelected.value) * 100).toFixed(2) 
+    : 0;
+});
 
-  
+const initChart = () => {
+  if (!donutChartRef.value) return;
+  if (myChart) myChart.dispose();
+
+  myChart = echarts.init(donutChartRef.value);
+
+  const sCVD = selectedCVDCount.value;
+  const sNo = selectedHealthyCount.value;
+  const uCVD = props.processObject?props.processObject.unselectedCVD.length :0;
+  const uNo = props.processObject?props.processObject.unselectedNoCVD.length : 0;
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: <strong>{c}</strong> ({d}%)'
+    },
+    series: [
+      {
+        name: 'Inner: Selected Subgroup',
+        type: 'pie',
+        selectedMode: 'single',
+        radius: ['30%', '45%'],
+        label: {
+          position: 'inner',
+          fontSize: 10,
+          formatter: '{d}%',
+          color: '#fff'
+        },
+        labelLine: { show: false },
+        data: [
+          { value: sCVD, name: 'Selected CVD', itemStyle: { color: '#ff4d4f' } },
+          { value: sNo, name: 'Selected Healthy', itemStyle: { color: '#1890ff' } }
+        ]
+      },
+      {
+        name: 'Outer: Background Data',
+        type: 'pie',
+        radius: ['70%', '85%'],
+        itemStyle: { opacity: 0.3 }, // Faint background for context
+        label: {
+          formatter: '{b}: {c}\n{d}%',
+          fontSize: 11
+        },
+        data: [
+          { value: uCVD, name: 'Background CVD', itemStyle: { color: '#ff4d4f' } },
+          { value: uNo, name: 'Background Healthy', itemStyle: { color: '#1890ff' } }
+        ]
+      }
+    ]
+  };
+
+  myChart.setOption(option);
+};
+
+watch(() => props.processObject, () => initChart(), { deep: true });
+
+onMounted(() => {
+  window.addEventListener('resize', () => myChart?.resize());
+  initChart();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', () => myChart?.resize());
+  myChart?.dispose();
+});
 </script>
 
-<style  scoped>
-.summary-root {
-  width: 100%;
+<style scoped>
+.summary-container {
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  min-height: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
-.summary-canvas {
+.guidance-section {
+  padding: 20px;
+  background: #f8fbff;
+  border-bottom: 1px solid #e6effb;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.pulse-icon {
+  width: 10px;
+  height: 10px;
+  background: #1890ff;
+  border-radius: 50%;
+  margin-right: 10px;
+  box-shadow: 0 0 0 rgba(24, 144, 255, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 16px;
+  color: #003a8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-status {
+  font-size: 13px;
+  color: #595959;
+  margin-bottom: 10px;
+}
+
+.dynamic-narrative {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #262626;
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #1890ff;
+  margin-bottom: 15px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.metric-card {
+  text-align: center;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+
+.metric-card .label {
+  display: block;
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.metric-card .value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.red { color: #cf1322; }
+.blue { color: #096dd9; }
+.purple { color: #722ed1; }
+
+.chart-canvas {
+  flex: 1;
   width: 100%;
-  height: 100%;
-  min-height: 0;
+  min-height: 350px;
+}
+
+.chart-legend-hint {
+  text-align: center;
+  padding: 10px;
+  color: #bfbfbf;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(24, 144, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
 }
 </style>

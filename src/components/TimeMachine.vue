@@ -1,6 +1,6 @@
 <template>
   <div>
-     <a-modal v-model:open="open" width="800px"  title="Health Time Machine"  :footer="null" @cancel="closeModal">
+     <a-modal v-model:open="open" width="800px"  title="Risk Simulator"  :footer="null" @cancel="closeModal">
         <div ref="timeMachine" style="height: 600px;" ></div>
       </a-modal>
             
@@ -119,10 +119,11 @@ import * as echarts from 'echarts';
       },
       xAxis: {
         type: 'category',
+        name:'Age',
         data: simulationData.map(d => d.label)
       },
       yAxis: [
-        { type: 'value', name: 'Count' },
+        { type: 'value', name: 'Number' },
         { type: 'value', name: 'Risk (%)', max: 100 }
       ],
       series: [

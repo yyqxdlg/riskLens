@@ -8,36 +8,54 @@
       autocomplete="off"
       class="user-form-grid"
     >
-      <a-row :gutter="18">
-        <a-col v-for="field in numericFields" :key="field.key" flex="1">
-        <a-form-item
-          :label="field.label"
-          :name="field.key"
-        >
-          <a-input
-            v-model:value="formState[field.key]"
-          />
-        </a-form-item>
+      <a-row :gutter="16">
+        <a-col v-for="field in numericFields" :key="field.key" :span="6">
+          <a-form-item
+            :label="field.label"
+            :name="field.key"
+          >
+            <a-input
+              v-model:value="formState[field.key]"
+            />
+          </a-form-item>
         </a-col>
-        <a-col flex="1.2">
-          <a-form-item label="Diabetes" name="diabetesSelections">
-            <a-checkbox-group
+        
+      </a-row>
+      <a-row :gutter="16">
+        <a-col :span="6">
+          <a-form-item label="hasDiabetes" name="diabetesSelections">
+            <a-select
               v-model:value="formState.diabetesSelections"
               :options="diabetesOptions"
             />
           </a-form-item>
         </a-col>
+        <a-col :span="6">
+          <a-button style="margin:0 6px"  type="primary" @click="handleConfirm">confirm</a-button>
+          <a-button style="margin:0 6px" type="primary" @click="handleReset">reset</a-button>
+          <a-tooltip color="#87d068" title="See how risk trends evolve for people like you over the next many years.">
+            <a-button style="margin:0 6px"  class="action-btn action-btn-primary" @click="openTimeMachine">
+            
+              Risk Simulator
+            </a-button>
+          </a-tooltip>
+        </a-col>
+        <!-- <a-col :span="6">
+          <a-button  type="primary">reset</a-button>
+        </a-col> -->
       </a-row>
       <div class="actions-row">
-        <a-button size="small" class="action-btn action-btn-primary" @click="handleGetOlder">Get Older (+5y)</a-button>
-        <a-button size="small" class="action-btn" @click="emit('openTimeMachine')">Health Time Machine</a-button>
+        <!-- <a-button size="small" class="action-btn action-btn-primary" @click="handleGetOlder">Get Older (+5y)</a-button> -->
+        
+        
       </div>
     </a-form>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { message } from 'ant-design-vue';
 
 const props = defineProps({
   clearSignal: {
@@ -49,15 +67,16 @@ const props = defineProps({
 const emit = defineEmits(['updateFilters', 'updateUserInputs', 'openTimeMachine'])
 
 const numericFields = [
-  { key: 'age', label: 'Age' },
-  { key: 'bmi', label: 'BMI' },
-  { key: 'sbp', label: 'SBP' },
-  { key: 'chol', label: 'CHOL' }
+  { key: 'age', label: 'Age',description:'Age:' },
+  { key: 'bmi', label: 'BMI',description: 'Body Mass Index: A measure of body composition based on height and weight.' },
+  { key: 'sbp', label: 'SBP' ,description:'Systolic Blood Pressure: The pressure in your arteries when your heart beats.'},
+  { key: 'chol', label: 'CHOL',description:'Total Cholesterol: The total amount of fat substances found in your blood.' }
 ]
 
 const diabetesOptions = [
-  { label: 'Non-DM', value: 'Non-Diabetic' },
-  { label: 'DM', value: 'Diabetic' }
+  {label:'',value:''},
+  { label: 'no', value: 'Non-Diabetic' },
+  { label: 'yes', value: 'Diabetic' }
 ]
 
 const emptyFormState = () => ({
@@ -65,7 +84,7 @@ const emptyFormState = () => ({
   bmi: '',
   sbp: '',
   chol: '',
-  diabetesSelections: []
+  diabetesSelections: ''
 })
 const formState = ref(emptyFormState())
 
@@ -96,12 +115,12 @@ const extractNumber = (input) => {
   return Number.isFinite(value) ? value : null
 }
 
-const handleGetOlder = () => {
-  const age = extractNumber(formState.value.age)
-  if (age === null) return
-  const nextAge = Math.round(clamp(age + 5, RANGE_LIMITS.age[0], RANGE_LIMITS.age[1]))
-  formState.value.age = String(nextAge)
-}
+// const handleGetOlder = () => {
+//   const age = extractNumber(formState.value.age)
+//   if (age === null) return
+//   const nextAge = Math.round(clamp(age + 5, RANGE_LIMITS.age[0], RANGE_LIMITS.age[1]))
+//   formState.value.age = String(nextAge)
+// }
 
 const classifyFilters = () => {
   const next = emptyFilters()
@@ -145,12 +164,14 @@ const classifyFilters = () => {
     else next.lipidGroup = ['Extreme']
   }
 
-  const diabetesSelections = [...new Set(formState.value.diabetesSelections || [])]
-    .filter(v => v === 'Non-Diabetic' || v === 'Diabetic')
-  if (diabetesSelections.length === 1) {
-    next.diabetesLabel = diabetesSelections
-  }
-
+  // const diabetesSelections = [...new Set(formState.value.diabetesSelections || [])]
+  //   .filter(v => v === 'Non-Diabetic' || v === 'Diabetic')
+  // if (diabetesSelections.length === 1) {
+  //   next.diabetesLabel = diabetesSelections
+  // }
+  const diabetesRaw = formState.value.diabetesSelections
+  next.diabetesLabel =  !diabetesRaw ? []: diabetesRaw === 'Non-Diabetic' ? ['Non-Diabetic'] : ['Diabetic']
+  // console.log(diabetesRaw,next,'next')
   return next
 }
 
@@ -159,35 +180,58 @@ const buildUserInputs = () => {
   const bmiRaw = extractNumber(formState.value.bmi)
   const sbpRaw = extractNumber(formState.value.sbp)
   const cholRaw = extractNumber(formState.value.chol)
-  const diabetesSelections = [...new Set(formState.value.diabetesSelections || [])]
-    .filter(v => v === 'Non-Diabetic' || v === 'Diabetic')
+  // const diabetesSelections = [...new Set(formState.value.diabetesSelections || [])]
+  //   .filter(v => v === 'Non-Diabetic' || v === 'Diabetic')
+  const diabetesRaw = formState.value.diabetesSelections
 
   return {
     age: ageRaw === null ? null : clamp(ageRaw, RANGE_LIMITS.age[0], RANGE_LIMITS.age[1]),
     bmi: bmiRaw === null ? null : clamp(bmiRaw, RANGE_LIMITS.bmi[0], RANGE_LIMITS.bmi[1]),
     sbp: sbpRaw === null ? null : clamp(sbpRaw, RANGE_LIMITS.sbp[0], RANGE_LIMITS.sbp[1]),
     chol: cholRaw === null ? null : clamp(cholRaw, RANGE_LIMITS.chol[0], RANGE_LIMITS.chol[1]),
-    diabetes: diabetesSelections.length === 1
-      ? (diabetesSelections[0] === 'Diabetic' ? 1 : 0)
-      : null
+    diabetes: !diabetesRaw ? []: diabetesRaw === 'Non-Diabetic' ? ['Non-Diabetic'] : ['Diabetic']
+    
   }
 }
+const openTimeMachine = () => {
+  if(!extractNumber(formState.value.age) ){
+    message.error({
+    content: 'Age can not be empty',
+    duration: 3, // 停止 3 秒后消失
+  });
+  }else{
+    emit('openTimeMachine')
+  }
+  
+}
 
-watch(
-  formState,
-  () => {
+  const handleConfirm = () => {
     emit('updateFilters', classifyFilters())
     emit('updateUserInputs', buildUserInputs())
-  },
-  { deep: true, immediate: true }
-)
+  }
+  const handleReset = () => {
+    formState.value = emptyFormState()
+    handleConfirm()
+  }
+// watch(
+//   formState,
+//   () => {
+//     emit('updateFilters', classifyFilters())
+//     emit('updateUserInputs', buildUserInputs())
+//   },
+//   { deep: true, immediate: true }
+// )
 
 watch(
   () => props.clearSignal,
   () => {
-    formState.value = emptyFormState()
+    // formState.value = emptyFormState()
+    handleReset()
   }
 )
+onMounted(()=>{
+  handleConfirm()
+})
 </script>
 
 <style scoped>
