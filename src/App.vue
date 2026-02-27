@@ -4,7 +4,7 @@
         <template #tab>
           <span>
             <apple-outlined/>
-            Home
+            Main
           </span>
         </template>
         <div class="page-shell">
@@ -35,17 +35,18 @@
               />
             </section>
 
-            <section class="panel-card rightPart">
+            
+          </div>
+          <section class="panel-card rightPart">
               <div class="twoContainer">
                 <div class="radarPart">
-                  <RadarPart :processObject="processArray" ></RadarPart>
+                  <RadarPart :processObject="processArray" :userInputs="userInputs"></RadarPart>
                 </div>
                 <div class="summaryPart">
                   <SummaryPart :processObject="processArray" ></SummaryPart>
                 </div>
               </div>
             </section>
-          </div>
           <TimeMachine v-if="open" :rawGroupData="rawGroupData" :modalState="modalState"  @colseTimeModal="colseTimeModal"></TimeMachine>
         </div>
       </a-tab-pane>
@@ -184,10 +185,11 @@ import TimeMachine from './components/TimeMachine.vue';
       if (isMatched) {
         if (hasCVD) result.selectedCVD.push(item);
         else result.selectedNoCVD.push(item);
-      } else {
-        if (hasCVD) result.unselectedCVD.push(item);
-        else result.unselectedNoCVD.push(item);
-      }
+      } 
+      
+      if (hasCVD) result.unselectedCVD.push(item);
+      else result.unselectedNoCVD.push(item);
+      
     });
    
     return result
@@ -350,14 +352,14 @@ import TimeMachine from './components/TimeMachine.vue';
 }
 
 .radarPart {
-  width: 54%;
-  height: 100%;
+  width: 50%;
+  height: 800px;
   min-height: 0;
 }
 
 .summaryPart {
-  width: 46%;
-  height: 100%;
+  width: 50%;
+  height: 800px;
   min-height: 0;
 }
 
