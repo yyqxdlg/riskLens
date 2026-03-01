@@ -128,9 +128,9 @@ import TeamPage from './components/TeamPage.vue';
     if (!right.length) return left;
     const inter = left.filter(item => right.includes(item));
     if (inter.length) return inter;
-    // When range brush and form input conflict on the same dimension,
-    // keep form input as the effective filter to avoid falling back to "no filter".
-    return right;
+    // If the user re-selects on the range chart after typing,
+    // treat the latest chart interaction as the active filter for that dimension.
+    return left;
   };
 
   const rebuildActiveFilters = () => {
@@ -149,7 +149,17 @@ import TeamPage from './components/TeamPage.vue';
   };
 
   const onFormFiltersUpdate = (val) => {
-    formFilters.value = { ...formFilters.value, ...val };
+    const nextForm = { ...formFilters.value, ...val };
+    const nextRange = { ...rangeFilters.value };
+
+    Object.keys(nextForm).forEach((key) => {
+      if ((nextForm[key] || []).length > 0) {
+        nextRange[key] = []
+      }
+    });
+
+    formFilters.value = nextForm;
+    rangeFilters.value = nextRange;
     rebuildActiveFilters();
   };
 
@@ -278,9 +288,10 @@ import TeamPage from './components/TeamPage.vue';
 }
 
 .page-shell {
-  max-width: 1360px;
+  width: calc(100vw - 24px);
+  max-width: none;
   margin: 0 auto;
-  padding: 0 16px 14px;
+  padding: 0 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -330,13 +341,14 @@ import TeamPage from './components/TeamPage.vue';
 }
 
 .mainChartsRow {
-  display: grid;
-  grid-template-columns: minmax(560px, 0.88fr) minmax(660px, 1.12fr);
-  gap: 12px;
+  display: block;
+  width: 100%;
   min-height: 456px;
 }
 
 .rangePart {
+  width: 100%;
+  height: 456px;
   min-height: 456px;
   padding: 8px 8px 4px;
 }
@@ -374,6 +386,7 @@ import TeamPage from './components/TeamPage.vue';
 
   .rangePart,
   .rightPart {
+    height: 460px;
     min-height: 460px;
   }
 }
