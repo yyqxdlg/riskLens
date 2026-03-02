@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { message } from 'ant-design-vue';
 import {InfoCircleTwoTone}  from '@ant-design/icons-vue';
 
@@ -105,6 +105,7 @@ const emptyFormState = () => ({
   diabetesSelections: ''
 })
 const formState = ref(emptyFormState())
+let liveSyncTimer = null
 
 const emptyFilters = () => ({
   ageGroup: [],
@@ -224,32 +225,46 @@ const openTimeMachine = () => {
   
 }
 
+const emitCurrentState = () => {
+  emit('updateFilters', classifyFilters())
+  emit('updateUserInputs', buildUserInputs())
+}
+
+const scheduleLiveEmit = () => {
+  if (liveSyncTimer) clearTimeout(liveSyncTimer)
+  liveSyncTimer = setTimeout(() => {
+    emitCurrentState()
+  }, 120)
+}
+
   const handleConfirm = () => {
-    emit('updateFilters', classifyFilters())
-    emit('updateUserInputs', buildUserInputs())
+    emitCurrentState()
   }
   const handleReset = () => {
     formState.value = emptyFormState()
-    handleConfirm()
+    emitCurrentState()
   }
-// watch(
-//   formState,
-//   () => {
-//     emit('updateFilters', classifyFilters())
-//     emit('updateUserInputs', buildUserInputs())
-//   },
-//   { deep: true, immediate: true }
-// )
+
+watch(
+  formState,
+  () => {
+    scheduleLiveEmit()
+  },
+  { deep: true }
+)
 
 watch(
   () => props.clearSignal,
   () => {
-    // formState.value = emptyFormState()
     handleReset()
   }
 )
 onMounted(()=>{
-  handleConfirm()
+  emitCurrentState()
+})
+
+onBeforeUnmount(() => {
+  if (liveSyncTimer) clearTimeout(liveSyncTimer)
 })
 </script>
 

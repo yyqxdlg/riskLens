@@ -106,7 +106,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['updateFilters'])
+const emit = defineEmits(['updateFilters', 'updateSelection'])
 
 const chartDimensions = [
   { key: 'ageGroup', label: 'Age', rawKey: 'age' },
@@ -339,7 +339,7 @@ const filteredPopulationShareText = computed(() => {
   if (!globalPopulationTotal.value) return '0.0%'
   return `${((filteredPopulationCount.value / globalPopulationTotal.value) * 100).toFixed(1)}%`
 })
-const selectedSubgroupRows = computed(() => getFilteredRowsForDim())
+const selectedSubgroupRows = computed(() => getExactSelectedRows())
 const hasSubgroupFilter = computed(() =>
   globalPopulationTotal.value > 0
   && filteredPopulationCount.value > 0
@@ -461,6 +461,48 @@ const getFilteredRowsForDim = (skipDimKey) => {
   return filteredIds.map(index => props.rawGroupData[index])
 }
 
+const getSelectedBarMatchers = (dimKey) => {
+  const selectedIds = new Set(selectedBarIdsByDim.value[dimKey] || [])
+  if (!selectedIds.size) return []
+
+  const bars = rowDataByDim.value[dimKey]?.bars || []
+  return bars
+    .filter(bar => selectedIds.has(bar.id) && !bar.isGap)
+    .map(bar => ({
+      category: bar.category,
+      minRaw: Number(bar.minRaw),
+      maxRaw: Number(bar.maxRaw)
+    }))
+}
+
+const matchesPreciseBarSelection = (row, dimKey) => {
+  const matchers = getSelectedBarMatchers(dimKey)
+  if (!matchers.length) return true
+
+  const dim = allDimensions.find(item => item.key === dimKey)
+  if (!dim) return true
+
+  const category = row.displayGroups?.[dimKey]
+  const raw = Number(row.rawValues?.[dim.rawKey])
+
+  return matchers.some((matcher) => {
+    if (matcher.category !== category) return false
+    if (!Number.isFinite(matcher.minRaw) || !Number.isFinite(matcher.maxRaw) || !Number.isFinite(raw)) {
+      return true
+    }
+    return raw >= matcher.minRaw && raw <= matcher.maxRaw
+  })
+}
+
+const getExactSelectedRows = () => {
+  const categoryMatchedRows = getFilteredRowsForDim()
+  if (!categoryMatchedRows.length) return []
+
+  return categoryMatchedRows.filter((row) => (
+    chartDimensions.every(dim => matchesPreciseBarSelection(row, dim.key))
+  ))
+}
+
 const hasAnyLeftSelection = computed(() => {
   const filters = getLiveRangeFilters()
   const hasDimSelection = Object.values(filters).some(arr => arr.length > 0)
@@ -563,6 +605,11 @@ const emitAllFilters = (force = false) => {
     diabetesLabel: [...next.diabetesLabel]
   }
   emit('updateFilters', next)
+}
+
+const emitExactSelection = () => {
+  const rowIds = getExactSelectedRows().map(row => props.rawGroupData.indexOf(row))
+  emit('updateSelection', rowIds)
 }
 
 const contextSelectionFor = (dimKey) => {
@@ -939,6 +986,12 @@ const clearAllSelections = () => {
   brushSpanByDim.value = createSpanMap()
   if (chart) {
     suppressBrushEvent = true
+    chart.setOption({
+      series: chartDimensions.flatMap((dim) => ([
+        { id: makeSeriesId(dim.key, 'total'), markArea: { silent: true, data: [] } },
+        { id: makeSeriesId(dim.key, 'impact'), markArea: { silent: true, data: [] } }
+      ]))
+    }, false, true)
     syncBrushArea()
     requestAnimationFrame(() => {
       suppressBrushEvent = false
@@ -969,7 +1022,9 @@ const buildTotalData = (dimKey, options = {}) => {
       itemStyle: {
         color: totalGradient,
         borderRadius: [0, 0, 0, 0],
-        opacity: hasBarSelected ? (selectedBarIds.has(bar.id) ? 0.72 : 0.18) : baseOpacity
+        opacity: hasBarSelected ? (selectedBarIds.has(bar.id) ? 0.82 : 0.12) : baseOpacity,
+        borderWidth: hasBarSelected && selectedBarIds.has(bar.id) ? 1.2 : 0,
+        borderColor: 'rgba(37,99,235,0.55)'
       }
     }
   })
@@ -1265,33 +1320,10 @@ const buildImpactMarkLine = (markerIndex) => {
   }
 }
 
-const buildMarkArea = (dimKey) => {
-  const span = brushSpanByDim.value[dimKey]
-  if (!span) {
-    return {
-      silent: true,
-      data: []
-    }
-  }
-
-  const row = rowDataByDim.value[dimKey]
-  const barCount = row?.bars?.length || 0
-  const halfBand = barCount > 32 ? 0.34 : barCount > 16 ? 0.38 : 0.42
-  const left = Math.min(span.start, span.end) - halfBand
-  const right = Math.max(span.start, span.end) + halfBand
-
+const buildMarkArea = () => {
   return {
     silent: true,
-    z: 6,
-    itemStyle: {
-      color: 'rgba(59,130,246,0.10)',
-      borderColor: 'rgba(37,99,235,0.60)',
-      borderWidth: 1
-    },
-    data: [[
-      { xAxis: left },
-      { xAxis: right }
-    ]]
+    data: []
   }
 }
 
@@ -1711,6 +1743,7 @@ const toggleCategorySelection = (dimKey, category) => {
 
   rebuildAndRender()
   emitAllFilters()
+  emitExactSelection()
 }
 
 const coordToIndex = (coord, max, fallback, rowBars) => {
@@ -1852,6 +1885,7 @@ const handleBrushSelected = (params) => {
 
   rebuildAndRender()
   emitAllFilters()
+  emitExactSelection()
 }
 
 const collapseAllExpanded = () => {
@@ -1867,6 +1901,7 @@ const clearLeftSelection = () => {
   clearAllSelections()
   rebuildAndRender()
   emitAllFilters()
+  emitExactSelection()
 }
 
 const initChart = async () => {
@@ -1905,6 +1940,7 @@ onMounted(async () => {
   rebuildAndRender()
   await initChart()
   emitAllFilters(true)
+  emitExactSelection()
   window.addEventListener('resize', handleResize)
 })
 
@@ -1926,6 +1962,7 @@ watch(
       await initChart()
     }
     emitAllFilters()
+    emitExactSelection()
   },
   { deep: true }
 )
@@ -1936,6 +1973,7 @@ watch(
     clearLocalSelectionsForChangedContext(next, prev)
     rebuildAndRender()
     emitAllFilters()
+    emitExactSelection()
   },
   { deep: true }
 )
@@ -1954,6 +1992,7 @@ watch(
     clearAllSelections()
     rebuildAndRender()
     emitAllFilters()
+    emitExactSelection()
   }
 )
 </script>

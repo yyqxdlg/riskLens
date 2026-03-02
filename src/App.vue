@@ -32,6 +32,7 @@
                 :userInputs="userInputs"
                 :clearSignal="clearSignal"
                 @updateFilters="onRangeFiltersUpdate"
+                @updateSelection="onRangeSelectionUpdate"
               />
             </section>
 
@@ -40,7 +41,11 @@
           <section class="panel-card rightPart">
               <div class="twoContainer">
                 <div class="radarPart">
-                  <RadarPart :processObject="processArray" :userInputs="userInputs"></RadarPart>
+                  <RadarPart
+                    :processObject="processArray"
+                    :userInputs="userInputs"
+                    :activeFilters="activeFilters"
+                  ></RadarPart>
                 </div>
                 <div class="summaryPart">
                   <SummaryPart :processObject="processArray" ></SummaryPart>
@@ -104,6 +109,7 @@ import TeamPage from './components/TeamPage.vue';
 
   const activeFilters = ref(emptyFilterMap());
   const rangeFilters = ref(emptyFilterMap());
+  const rangeSelectedRowIds = ref(null);
   const formFilters = ref(emptyFilterMap());
   const clearSignal = ref(0);
   const emptyUserInputs = () => ({
@@ -148,6 +154,10 @@ import TeamPage from './components/TeamPage.vue';
     rebuildActiveFilters();
   };
 
+  const onRangeSelectionUpdate = (rowIds) => {
+    rangeSelectedRowIds.value = Array.isArray(rowIds) ? rowIds : null;
+  };
+
   const onFormFiltersUpdate = (val) => {
     const nextForm = { ...formFilters.value, ...val };
     const nextRange = { ...rangeFilters.value };
@@ -170,6 +180,7 @@ import TeamPage from './components/TeamPage.vue';
   const clearAllFilters = () => {
     formFilters.value = emptyFilterMap();
     rangeFilters.value = emptyFilterMap();
+    rangeSelectedRowIds.value = null;
     userInputs.value = emptyUserInputs();
     rebuildActiveFilters();
     clearSignal.value += 1;
@@ -178,6 +189,8 @@ import TeamPage from './components/TeamPage.vue';
   const processData = () => {
     const filters = activeFilters.value;
     const activeKeys = Object.keys(filters).filter(key => filters[key].length > 0);
+    const hasExactSelection = Array.isArray(rangeSelectedRowIds.value);
+    const selectedRowIdSet = hasExactSelection ? new Set(rangeSelectedRowIds.value) : null;
    
     const result = {
       selectedCVD: [],
@@ -185,11 +198,11 @@ import TeamPage from './components/TeamPage.vue';
       unselectedCVD: [],
       unselectedNoCVD: []
     };
-    rawGroupData.value.forEach(item => {
+    rawGroupData.value.forEach((item, index) => {
      
-      const isMatched = activeKeys.every(key => {
-        return filters[key].includes(item.displayGroups[key]);
-      });
+      const isMatched = hasExactSelection
+        ? selectedRowIdSet.has(index)
+        : activeKeys.every(key => filters[key].includes(item.displayGroups[key]));
 
      
       const hasCVD = item.rawValues.CVD === 1;
