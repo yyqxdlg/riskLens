@@ -79,6 +79,26 @@ const props = defineProps({
   clearSignal: {
     type: Number,
     default: 0
+  },
+  initialFilters: {
+    type: Object,
+    default: () => ({
+      ageGroup: [],
+      bmiGroup: [],
+      bpGroup: [],
+      lipidGroup: [],
+      diabetesLabel: []
+    })
+  },
+  initialValues: {
+    type: Object,
+    default: () => ({
+      age: null,
+      bmi: null,
+      sbp: null,
+      chol: null,
+      diabetes: null
+    })
   }
 })
 
@@ -114,6 +134,7 @@ const emptyFilters = () => ({
   lipidGroup: [],
   diabetesLabel: []
 })
+const seededFilters = ref(emptyFilters())
 
 const RANGE_LIMITS = {
   age: [18, 95],
@@ -142,7 +163,7 @@ const extractNumber = (input) => {
 // }
 
 const classifyFilters = () => {
-  const next = emptyFilters()
+  const next = { ...emptyFilters(), ...seededFilters.value }
 
   const ageRaw = extractNumber(formState.value.age)
   if (ageRaw !== null) {
@@ -189,7 +210,11 @@ const classifyFilters = () => {
   //   next.diabetesLabel = diabetesSelections
   // }
   const diabetesRaw = formState.value.diabetesSelections
-  next.diabetesLabel =  !diabetesRaw ? []: diabetesRaw === 'Non-Diabetic' ? ['Non-Diabetic'] : ['Diabetic']
+  next.diabetesLabel = !diabetesRaw
+    ? (seededFilters.value.diabetesLabel || [])
+    : diabetesRaw === 'Non-Diabetic'
+      ? ['Non-Diabetic']
+      : ['Diabetic']
   // console.log(diabetesRaw,next,'next')
   return next
 }
@@ -230,6 +255,24 @@ const emitCurrentState = () => {
   emit('updateUserInputs', buildUserInputs())
 }
 
+const toFormState = (values = {}) => ({
+  age: values.age ?? values.age === 0 ? String(values.age ?? '') : '',
+  bmi: values.bmi ?? values.bmi === 0 ? String(values.bmi ?? '') : '',
+  sbp: values.sbp ?? values.sbp === 0 ? String(values.sbp ?? '') : '',
+  chol: values.chol ?? values.chol === 0 ? String(values.chol ?? '') : '',
+  diabetesSelections: Array.isArray(values.diabetes)
+    ? (values.diabetes[0] || '')
+    : (values.diabetes === 1 ? 'Diabetic' : values.diabetes === 0 ? 'Non-Diabetic' : '')
+})
+
+const normalizeFilters = (filters = {}) => ({
+  ageGroup: [...(filters.ageGroup || [])],
+  bmiGroup: [...(filters.bmiGroup || [])],
+  bpGroup: [...(filters.bpGroup || [])],
+  lipidGroup: [...(filters.lipidGroup || [])],
+  diabetesLabel: [...(filters.diabetesLabel || [])]
+})
+
 const scheduleLiveEmit = () => {
   if (liveSyncTimer) clearTimeout(liveSyncTimer)
   liveSyncTimer = setTimeout(() => {
@@ -241,6 +284,7 @@ const scheduleLiveEmit = () => {
     emitCurrentState()
   }
   const handleReset = () => {
+    seededFilters.value = emptyFilters()
     formState.value = emptyFormState()
     emitCurrentState()
   }
@@ -254,8 +298,27 @@ watch(
 )
 
 watch(
+  () => props.initialValues,
+  (nextValues) => {
+    const nextState = toFormState(nextValues)
+    if (JSON.stringify(nextState) === JSON.stringify(formState.value)) return
+    formState.value = nextState
+  },
+  { deep: true, immediate: true }
+)
+
+watch(
+  () => props.initialFilters,
+  (nextFilters) => {
+    seededFilters.value = normalizeFilters(nextFilters)
+  },
+  { deep: true, immediate: true }
+)
+
+watch(
   () => props.clearSignal,
   () => {
+    seededFilters.value = emptyFilters()
     handleReset()
   }
 )

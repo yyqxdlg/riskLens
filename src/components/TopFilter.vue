@@ -10,7 +10,15 @@
             class="chip"
             :class="`chip-${row.key}`"
           >
-            {{ item }}
+            <span>{{ item }}</span>
+            <button
+              type="button"
+              class="chip-close"
+              @click.stop="emit('remove', { key: row.key, value: item })"
+              aria-label="Remove filter"
+            >
+              ×
+            </button>
           </span>
         </div>
       </div>
@@ -34,6 +42,8 @@ const props = defineProps({
     })
   }
 })
+
+const emit = defineEmits(['remove'])
 
 const filterMeta = [
   { key: 'ageGroup', label: 'Age' },
@@ -86,12 +96,26 @@ const activeRows = computed(() =>
 .chip {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
   border: 1px solid transparent;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+.chip-close {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  line-height: 1;
+  background: rgba(15, 23, 42, 0.08);
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
 }
 
 .chip-ageGroup {

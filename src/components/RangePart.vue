@@ -34,7 +34,9 @@
       <div class="chart-panel">
         <div ref="chartRef" class="range-chart" />
         <div v-if="isBusy" class="chart-loading">
-          <span class="loading-spinner" />
+          <span class="loading-heart" aria-hidden="true">
+            <span class="heart-shape"></span>
+          </span>
           <span class="loading-text">Updating linked distributions...</span>
         </div>
       </div>
@@ -103,6 +105,13 @@ const props = defineProps({
   clearSignal: {
     type: Number,
     default: 0
+  },
+  clearRequest: {
+    type: Object,
+    default: () => ({
+      token: 0,
+      key: ''
+    })
   }
 })
 
@@ -612,6 +621,16 @@ const emitExactSelection = () => {
   emit('updateSelection', rowIds)
 }
 
+const removeSelectionForDim = (dimKey) => {
+  setMapValue(selectedByDim, dimKey, [])
+  setMapValue(expandedByDim, dimKey, [])
+  setMapValue(selectedBarIdsByDim, dimKey, [])
+  setMapValue(brushSpanByDim, dimKey, null)
+  rebuildAndRender()
+  emitAllFilters()
+  emitExactSelection()
+}
+
 const contextSelectionFor = (dimKey) => {
   const incoming = props.contextFilters?.[dimKey] || []
   const allCats = baseCategoriesByDim.value[dimKey] || []
@@ -1023,8 +1042,9 @@ const buildTotalData = (dimKey, options = {}) => {
         color: totalGradient,
         borderRadius: [0, 0, 0, 0],
         opacity: hasBarSelected ? (selectedBarIds.has(bar.id) ? 0.82 : 0.12) : baseOpacity,
-        borderWidth: hasBarSelected && selectedBarIds.has(bar.id) ? 1.2 : 0,
-        borderColor: 'rgba(37,99,235,0.55)'
+        borderWidth: 0,
+        shadowBlur: hasBarSelected && selectedBarIds.has(bar.id) ? 10 : 0,
+        shadowColor: 'rgba(37,99,235,0.18)'
       }
     }
   })
@@ -1061,9 +1081,8 @@ const buildRiskData = (dimKey, metric) => {
       itemStyle: {
         color,
         opacity: enabled ? activeOpacity : mutedOpacity,
-        borderWidth: enabled && hasBarSelected ? 0.8 : 0,
-        borderColor: metric === 'noCvd' ? '#1d4ed8' : '#c2410c',
-        shadowBlur: enabled && hasBarSelected ? 5 : 0,
+        borderWidth: 0,
+        shadowBlur: enabled && hasBarSelected ? 10 : 0,
         shadowColor: metric === 'noCvd' ? 'rgba(29,78,216,0.35)' : 'rgba(194,65,12,0.35)',
         borderRadius: [0, 0, 0, 0]
       }
@@ -1100,9 +1119,8 @@ const buildImpactData = (dimKey) => {
       itemStyle: {
         color: liftValue > 1 ? impactHigherGradient : impactLowerGradient,
         opacity: enabled ? activeOpacity : mutedOpacity,
-        borderWidth: enabled && hasBarSelected ? 0.8 : 0,
-        borderColor: liftValue > 1 ? '#c2410c' : '#1d4ed8',
-        shadowBlur: enabled && hasBarSelected ? 5 : 0,
+        borderWidth: 0,
+        shadowBlur: enabled && hasBarSelected ? 10 : 0,
         shadowColor: liftValue > 1 ? 'rgba(194,65,12,0.28)' : 'rgba(29,78,216,0.28)',
         borderRadius: [0, 0, 0, 0]
       }
@@ -1320,10 +1338,62 @@ const buildImpactMarkLine = (markerIndex) => {
   }
 }
 
-const buildMarkArea = () => {
+const getSelectedIndexSegments = (dimKey) => {
+  const rowBars = rowDataByDim.value[dimKey]?.bars || []
+  if (!rowBars.length) return []
+
+  const explicitIds = new Set(selectedBarIdsByDim.value[dimKey] || [])
+  const selectedCategories = new Set(normalizeSelection(dimKey, selectedByDim.value[dimKey] || []))
+
+  const indices = rowBars
+    .map((bar, index) => ({ bar, index }))
+    .filter(({ bar }) => !bar.isGap && (
+      explicitIds.size > 0
+        ? explicitIds.has(bar.id)
+        : selectedCategories.size > 0 && selectedCategories.has(bar.category)
+    ))
+    .map(({ index }) => index)
+
+  if (!indices.length) return []
+
+  const segments = []
+  let start = indices[0]
+  let prev = indices[0]
+
+  for (let i = 1; i < indices.length; i += 1) {
+    const current = indices[i]
+    if (current === prev + 1) {
+      prev = current
+      continue
+    }
+    segments.push([start, prev])
+    start = current
+    prev = current
+  }
+  segments.push([start, prev])
+  return segments
+}
+
+const buildSelectionMarkArea = (dimKey, axisMax) => {
+  const segments = getSelectedIndexSegments(dimKey)
+  if (!segments.length) {
+    return {
+      silent: true,
+      data: []
+    }
+  }
+
   return {
     silent: true,
-    data: []
+    itemStyle: {
+      color: 'rgba(59,130,246,0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(37,99,235,0.48)'
+    },
+    data: segments.map(([start, end]) => ([
+      { xAxis: start - 0.48, yAxis: 0 },
+      { xAxis: end + 0.48, yAxis: axisMax }
+    ]))
   }
 }
 
@@ -1493,7 +1563,7 @@ const buildOption = () => {
         barMaxWidth: 32,
         barCategoryGap,
         data: buildImpactData(dim.key),
-        markArea: buildMarkArea(dim.key),
+        markArea: buildSelectionMarkArea(dim.key, row.impactAxisMax),
         markLine: buildImpactMarkLine(markerIndex),
         z: 3
       })
@@ -1509,7 +1579,7 @@ const buildOption = () => {
         barCategoryGap,
         barGap: '-100%',
         data: buildTotalData(dim.key, { zoomed: shouldZoomCompositionAxis, zoomStrength }),
-        markArea: buildMarkArea(dim.key),
+        markArea: buildSelectionMarkArea(dim.key, compositionAxisMax),
         markLine: buildUserMarkLine(markerIndex),
         z: 1
       })
@@ -1645,9 +1715,9 @@ const buildOption = () => {
       throttleDelay: 40,
       toolbox: [],
       brushStyle: {
-        borderWidth: 2,
-        borderColor: '#2563eb',
-        color: 'rgba(59,130,246,0.2)'
+        borderWidth: 1.5,
+        borderColor: 'rgba(37,99,235,0.72)',
+        color: 'rgba(59,130,246,0.12)'
       }
     },
     grid: grids,
@@ -1696,6 +1766,7 @@ const renderChart = () => {
 
 const renderUserMarkersOnly = () => {
   if (!chart) return
+  startBusy()
   const series = chartDimensions.map((dim) => {
     const row = rowDataByDim.value[dim.key] || { bars: [] }
     const markerIndex = resolveUserMarkerIndex(dim.key, row)
@@ -1710,6 +1781,9 @@ const renderUserMarkersOnly = () => {
         }
   })
   chart.setOption({ series }, false, true)
+  requestAnimationFrame(() => {
+    finishBusy()
+  })
 }
 
 const setViewMode = (mode) => {
@@ -1763,6 +1837,7 @@ const coordToIndex = (coord, max, fallback, rowBars) => {
 
 const handleBrushSelected = (params) => {
   if (suppressBrushEvent) return
+  syncBrushArea()
 
   const batch = params?.batch?.[0]
   const areas = batch?.areas || []
@@ -1883,6 +1958,7 @@ const handleBrushSelected = (params) => {
   selectedBarIdsByDim.value = nextBarIds
   brushSpanByDim.value = nextSpans
 
+  syncBrushArea()
   rebuildAndRender()
   emitAllFilters()
   emitExactSelection()
@@ -1993,6 +2069,15 @@ watch(
     rebuildAndRender()
     emitAllFilters()
     emitExactSelection()
+  }
+)
+
+watch(
+  () => props.clearRequest?.token,
+  () => {
+    const dimKey = props.clearRequest?.key
+    if (!dimKey) return
+    removeSelectionForDim(dimKey)
   }
 )
 </script>
@@ -2169,19 +2254,48 @@ watch(
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: rgba(248, 250, 252, 0.55);
+  background: rgba(248, 250, 252, 0.62);
   backdrop-filter: blur(2px);
   z-index: 8;
   pointer-events: none;
 }
 
-.loading-spinner {
-  width: 18px;
-  height: 18px;
+.loading-heart {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: heartBeat 0.9s ease-in-out infinite;
+}
+
+.heart-shape {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  transform: rotate(-45deg);
+  border-radius: 2px;
+}
+
+.heart-shape::before,
+.heart-shape::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
   border-radius: 50%;
-  border: 2px solid rgba(24, 144, 255, 0.18);
-  border-top-color: #1890ff;
-  animation: spin 0.9s linear infinite;
+}
+
+.heart-shape::before {
+  top: -6px;
+  left: 0;
+}
+
+.heart-shape::after {
+  left: 6px;
+  top: 0;
 }
 
 .loading-text {
@@ -2291,8 +2405,10 @@ watch(
   100% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes heartBeat {
+  0%, 100% { transform: scale(0.92); }
+  20% { transform: scale(1.14); }
+  40% { transform: scale(0.98); }
+  60% { transform: scale(1.08); }
 }
 </style>
