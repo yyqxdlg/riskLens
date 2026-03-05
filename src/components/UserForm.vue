@@ -239,19 +239,20 @@ const scheduleLiveEmit = () => {
 
   const handleConfirm = () => {
     emitCurrentState()
+    scheduleLiveEmit()
   }
   const handleReset = () => {
     formState.value = emptyFormState()
     emitCurrentState()
   }
 
-watch(
-  formState,
-  () => {
-    scheduleLiveEmit()
-  },
-  { deep: true }
-)
+// watch(
+//   formState,
+//   () => {
+//     scheduleLiveEmit()
+//   },
+//   { deep: true }
+// )
 
 watch(
   () => props.clearSignal,

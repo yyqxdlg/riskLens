@@ -52,7 +52,7 @@
               <td class="dim-name">Age</td>
               <td>Clinical Lifespan Stages</td>
               <td>
-                <span class="tag">&lt;40: Young Adult</span>
+                <span class="tag green">&lt;40: Young Adult</span>
                 <span class="tag">40–59: Middle-Aged (Screening Window)</span>
                 <span class="tag">60–74: Senior</span>
                 <span class="tag"> &gt;75: Elderly</span>
@@ -62,7 +62,7 @@
               <td class="dim-name">BMI</td>
               <td>CDC Standards</td>
               <td>
-                <span class="tag green">&lt; 18.5: Underweight</span>
+                <span class="tag yellow">&lt; 18.5: Underweight</span>
                 <span class="tag green">18.5–24.9: Healthy</span>
                 <span class="tag yellow">25.0–29.9: Overweight</span>
                 <span class="tag red">30.0–34.9: Obese I</span>
