@@ -7,15 +7,13 @@
       </div>
 
       <div class="analysis-box">
-        <!-- <p class="filter-status">
-          <strong>Active Scope:</strong> {{ activeFiltersDescription || 'General Population (No filters applied)' }}
-        </p> -->
+    
         
         <div class="dynamic-narrative">
           <p v-if="totalSelected > 0">
             You have isolated a subgroup of <strong>{{ totalSelected.toLocaleString() }}</strong> individuals. 
-            The <strong>Inner Ring</strong> shows the risk composition of this specific group. 
-            Compare it to the <strong>Outer Ring</strong> (Background) to see if your selected factors (like BMI or Age) 
+            The <strong>Top Bar</strong> (Selected Group) shows the risk composition of this specific group. 
+            Compare it to the <strong>Bottom Bar</strong> (Background) to see if your selected factors (like BMI or Age) 
             increase the concentration of Cardiovascular Disease (CVD).
           </p>
           <p v-else>
@@ -43,7 +41,7 @@
     <div ref="donutChartRef" class="chart-canvas"></div>
     
     <div class="chart-legend-hint">
-      <small>* Inner Ring: Current Selection | Outer Ring: Total Background Population</small>
+      <small>* Top Bar: Selected Subgroup | Bottom Bar: Total Background Population</small>
     </div>
   </div>
 </template>
@@ -62,7 +60,7 @@ const props = defineProps({
       unselectedNoCVD: []
     })
   },
-  activeFiltersDescription: String
+
 });
 
 const donutChartRef = ref(null);
@@ -82,52 +80,149 @@ const prevalenceRate = computed(() => {
     : 0;
 });
 
+// const initChart = () => {
+//   if (!donutChartRef.value) return;
+//   if (myChart) myChart.dispose();
+
+//   myChart = echarts.init(donutChartRef.value);
+
+//   const sCVD = selectedCVDCount.value;
+//   const sNo = selectedHealthyCount.value;
+//   const uCVD = props.processObject?props.processObject.unselectedCVD.length :0;
+//   const uNo = props.processObject?props.processObject.unselectedNoCVD.length : 0;
+
+//   const option = {
+//     tooltip: {
+//       trigger: 'item',
+//       formatter: '{a} <br/>{b}: <strong>{c}</strong> ({d}%)'
+//     },
+//     series: [
+//       {
+//         name: 'Inner: Selected Subgroup',
+//         type: 'pie',
+//         selectedMode: 'single',
+//         radius: ['20%', '35%'],
+//         label: {
+//           position: 'inner',
+//           fontSize: 10,
+//           formatter: '{d}%',
+//           color: '#fff'
+//         },
+//         labelLine: { show: false },
+//         data: [
+//           { value: sCVD, name: 'Selected CVD', itemStyle: { color: '#ff4d4f' } },
+//           { value: sNo, name: 'Selected Healthy', itemStyle: { color: '#1890ff' } }
+//         ]
+//       },
+//       {
+//         name: 'Outer: Background Data',
+//         type: 'pie',
+//         radius: ['70%', '85%'],
+//         itemStyle: { opacity: 0.3 }, // Faint background for context
+//         label: {
+//           formatter: '{b}: {c}\n{d}%',
+//           fontSize: 11
+//         },
+//         data: [
+//           { value: uCVD, name: 'Background CVD', itemStyle: { color: '#ff4d4f' } },
+//           { value: uNo, name: 'Background Healthy', itemStyle: { color: '#1890ff' } }
+//         ]
+//       }
+//     ]
+//   };
+
+//   myChart.setOption(option);
+// };
 const initChart = () => {
-  if (!donutChartRef.value) return;
+  if (!donutChartRef.value) return; 
   if (myChart) myChart.dispose();
 
   myChart = echarts.init(donutChartRef.value);
 
+  // 1. 数据获取
   const sCVD = selectedCVDCount.value;
   const sNo = selectedHealthyCount.value;
-  const uCVD = props.processObject?props.processObject.unselectedCVD.length :0;
-  const uNo = props.processObject?props.processObject.unselectedNoCVD.length : 0;
+  const uCVD = props.processObject ? (props.processObject.unselectedCVD?.length || 0) : 0;
+  const uNo = props.processObject ? (props.processObject.unselectedNoCVD?.length || 0) : 0;
+
+  const totalS = sCVD + sNo;
+  const totalU = uCVD + uNo;
+
+  const getP = (val, total) => total > 0 ? (val / total) * 100 : 0;
 
   const option = {
     tooltip: {
-      trigger: 'item',
-      formatter: '{a} <br/>{b}: <strong>{c}</strong> ({d}%)'
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        let res = `<strong style="color: #333">${params[0].name}</strong><br/>`;
+        params.forEach(item => {
+          res += `${item.marker} ${item.seriesName}: <b>${item.data.raw.toLocaleString()}</b> (${item.value.toFixed(1)}%)<br/>`;
+        });
+        return res;
+      }
+    },
+    legend: {
+      data: [
+        { name: 'CVD', itemStyle: { color: '#ff4d4f' } },   // 强制图例使用标准的红色
+        { name: 'Healthy', itemStyle: { color: '#1890ff' } } // 强制图例使用标准的蓝色
+      ],
+      bottom: '5%',
+      itemWidth: 14,
+      itemHeight: 14
+    },
+    grid: {
+      left: '20%', 
+      right: '10%',
+      top: '15%',
+      bottom: '20%'
+    },
+    xAxis: {
+      type: 'value',
+      max: 100, 
+      show: false 
+    },
+    yAxis: {
+      type: 'category',
+      data: ['Background', 'Selected Group'],
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { fontWeight: 'bold', color: '#595959' }
     },
     series: [
       {
-        name: 'Inner: Selected Subgroup',
-        type: 'pie',
-        selectedMode: 'single',
-        radius: ['20%', '35%'],
+        name: 'CVD',
+        type: 'bar',
+        stack: 'total',
+        barWidth: 50,
         label: {
-          position: 'inner',
-          fontSize: 10,
-          formatter: '{d}%',
-          color: '#fff'
+          show: true,
+          position: 'inside',
+          color: '#fff',
+          formatter: (p) => `${p.data.raw}\n(${p.value.toFixed(1)}%)`
         },
-        labelLine: { show: false },
         data: [
-          { value: sCVD, name: 'Selected CVD', itemStyle: { color: '#ff4d4f' } },
-          { value: sNo, name: 'Selected Healthy', itemStyle: { color: '#1890ff' } }
+          // Background Row: 浅红
+          { value: getP(uCVD, totalU), raw: uCVD, itemStyle: { color: 'rgba(255, 77, 79, 0.3)' } },
+          // Selected Row: 标准红
+          { value: getP(sCVD, totalS), raw: sCVD, itemStyle: { color: '#ff4d4f' } }
         ]
       },
       {
-        name: 'Outer: Background Data',
-        type: 'pie',
-        radius: ['70%', '85%'],
-        itemStyle: { opacity: 0.3 }, // Faint background for context
+        name: 'Healthy',
+        type: 'bar',
+        stack: 'total',
         label: {
-          formatter: '{b}: {c}\n{d}%',
-          fontSize: 11
+          show: true,
+          position: 'inside',
+          color: '#fff',
+          formatter: (p) => `${p.data.raw}\n(${p.value.toFixed(1)}%)`
         },
         data: [
-          { value: uCVD, name: 'Background CVD', itemStyle: { color: '#ff4d4f' } },
-          { value: uNo, name: 'Background Healthy', itemStyle: { color: '#1890ff' } }
+          // Background Row: 浅蓝
+          { value: getP(uNo, totalU), raw: uNo, itemStyle: { color: 'rgba(24, 144, 255, 0.3)' } },
+          // Selected Row: 标准蓝
+          { value: getP(sNo, totalS), raw: sNo, itemStyle: { color: '#1890ff' } }
         ]
       }
     ]
@@ -135,7 +230,6 @@ const initChart = () => {
 
   myChart.setOption(option);
 };
-
 watch(() => props.processObject, () => initChart(), { deep: true });
 
 onMounted(() => {
@@ -233,7 +327,7 @@ onBeforeUnmount(() => {
   font-size: 16px;
   font-weight: 700;
 }
-
+.metric-card:hover { transform: translateY(-2px); }
 .red { color: #cf1322; }
 .blue { color: #096dd9; }
 .purple { color: #722ed1; }

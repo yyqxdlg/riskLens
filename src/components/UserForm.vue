@@ -282,6 +282,7 @@ const scheduleLiveEmit = () => {
 
   const handleConfirm = () => {
     emitCurrentState()
+    scheduleLiveEmit()
   }
   const handleReset = () => {
     seededFilters.value = emptyFilters()
@@ -289,13 +290,13 @@ const scheduleLiveEmit = () => {
     emitCurrentState()
   }
 
-watch(
-  formState,
-  () => {
-    scheduleLiveEmit()
-  },
-  { deep: true }
-)
+// watch(
+//   formState,
+//   () => {
+//     scheduleLiveEmit()
+//   },
+//   { deep: true }
+// )
 
 watch(
   () => props.initialValues,
