@@ -9,7 +9,7 @@
       <div class="analysis-box">
     
         
-        <div class="dynamic-narrative">
+        <!-- <div class="dynamic-narrative">
           <p v-if="totalSelected > 0">
             You have isolated a subgroup of <strong>{{ totalSelected.toLocaleString() }}</strong> individuals. 
             The <strong>Top Bar</strong> (Selected Group) shows the risk composition of this specific group. 
@@ -19,8 +19,27 @@
           <p v-else>
             No matching peers found for these criteria. Please adjust your sliders or categories for peer-group analysis.
           </p>
+        </div> -->
+        <div class="dynamic-narrative" :style="{ borderLeftColor: prevalenceDiff.isHigher ? '#ff4d4f' : '#52c41a' }">
+          <p v-if="totalSelected > 0">
+            In this subgroup of <strong>{{ totalSelected.toLocaleString() }}</strong> individuals, 
+            the CVD prevalence is <strong class="red">{{ prevalenceRate }}%</strong>.
+            
+            <span v-if="prevalenceDiff.isEqual">
+              This <strong>matches</strong> the total background prevalence ({{ backgroundPrevalence }}%).
+            </span>
+            <span v-else>
+              Compared to the overall population ({{ backgroundPrevalence }}%), this group shows a 
+              <strong :class="prevalenceDiff.isHigher ? 'red' : 'green'">
+                {{ prevalenceDiff.val }}% {{ prevalenceDiff.isHigher ? 'increase' : 'decrease' }}
+              </strong> 
+              in risk concentration.
+            </span>
+          </p>
+          <p v-else>
+            No matching peers found. Please adjust your filters to begin the comparative analysis.
+          </p>
         </div>
-
         <div class="metrics-grid">
           <div class="metric-card">
             <span class="label">Subgroup CVD</span>
@@ -241,6 +260,32 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', () => myChart?.resize());
   myChart?.dispose();
 });
+// 1. 新增：计算背景组（全部数据）的统计
+const backgroundCVDCount = computed(() => {
+  const uCVD = props.processObject?.unselectedCVD?.length || 0;
+  return selectedCVDCount.value + uCVD;
+});
+
+const backgroundTotal = computed(() => {
+  const uCVD = props.processObject?.unselectedCVD?.length || 0;
+  const uNo = props.processObject?.unselectedNoCVD?.length || 0;
+  return totalSelected.value + uCVD + uNo;
+});
+
+const backgroundPrevalence = computed(() => {
+  return backgroundTotal.value > 0 
+    ? ((backgroundCVDCount.value / backgroundTotal.value) * 100).toFixed(2) 
+    : 0;
+});
+// 2. 新增：对比描述逻辑
+const prevalenceDiff = computed(() => {
+  const diff = (prevalenceRate.value - backgroundPrevalence.value).toFixed(2);
+  return {
+    val: Math.abs(diff),
+    isHigher: diff > 0,
+    isEqual: diff == 0
+  };
+});
 </script>
 
 <style scoped>
@@ -258,6 +303,7 @@ onBeforeUnmount(() => {
   padding: 20px;
   background: #f8fbff;
   border-bottom: 1px solid #e6effb;
+  height: 220px;
 }
 
 .header-row {
@@ -300,6 +346,7 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   border-left: 4px solid #1890ff;
   margin-bottom: 15px;
+  height: 68px;
 }
 
 .metrics-grid {
@@ -314,6 +361,7 @@ onBeforeUnmount(() => {
   background: #fff;
   border: 1px solid #f0f0f0;
   border-radius: 6px;
+  height: 65px;
 }
 
 .metric-card .label {
