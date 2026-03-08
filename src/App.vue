@@ -64,6 +64,16 @@
             
           </div>
           <section class="panel-card rightPart">
+              <div class="dynamic-narrative" style="margin: 24px;">
+                <p v-if="totalSelected > 0">
+                  Based on the filters, You have isolated a subgroup of <strong>{{ totalSelected.toLocaleString() }}</strong> individuals. 
+                  consisting of <strong class="red">{{ selectedCVDCount.toLocaleString() }}</strong> CVD cases 
+                  and <strong class="blue">{{ selectedHealthyCount.toLocaleString() }}</strong> healthy peers.
+                </p>
+                <p v-else>
+                  No matching peers found for these criteria. Please adjust your sliders or categories for peer-group analysis.
+                </p>
+              </div>
               <div class="twoContainer">
                 <div class="radarPart">
                   <RadarPart
@@ -107,7 +117,7 @@
 
 <script setup>
 // import DashBoard from './components/DashBoard.vue'
-import {ref, onMounted, watch} from 'vue'
+import {ref, onMounted, watch, computed} from 'vue'
 import { HeartTwoTone, IdcardTwoTone ,BulbTwoTone} from '@ant-design/icons-vue';
 import UserForm from './components/UserForm.vue'
 import OnboardingFlow from './components/OnboardingFlow.vue'
@@ -356,6 +366,14 @@ import TeamPage from './components/TeamPage.vue';
     processArray.value = processData();
    })
   
+//后续修改
+const totalSelected = computed(() => selectedCVDCount.value + selectedHealthyCount.value);
+const selectedCVDCount = computed(() => {
+
+  return processArray.value ? (processArray.value?.selectedCVD || []).length : 0  
+  }
+) ;
+const selectedHealthyCount = computed(() => processArray.value ?(processArray.value?.selectedNoCVD || []).length : 0);
 
 </script>
 
@@ -614,4 +632,6 @@ import TeamPage from './components/TeamPage.vue';
   0%, 100% { opacity: 0.35; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(-3px); }
 }
+.red { color: #cf1322; }
+.blue { color: #096dd9; }
 </style>

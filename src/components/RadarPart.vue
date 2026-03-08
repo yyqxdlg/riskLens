@@ -754,7 +754,10 @@ const priorityRisks = computed(() => {
 
 .guidance-section {
   padding: 20px;
-  background: #fdfefe;
+  /* background: #fdfefe; */
+  background: #f8fbff;
+  height: 220px;
+  
   border-bottom: 1px solid #e6effb;
 }
 
@@ -786,13 +789,14 @@ const priorityRisks = computed(() => {
   font-size: 13px;
   line-height: 1.5;
   color: #475569;
-  background: #f8fafc;
+  /* background: #f8fafc; */
   padding: 10px;
   border-radius: 6px;
   border-left: 3px solid #722ed1;
   margin-bottom: 15px;
-    display: flex; align-items: center; padding: 15px; border-radius: 10px; 
+  display: flex; align-items: center; padding: 15px; border-radius: 10px; 
   margin-bottom: 20px; border-left: 6px solid #e2e8f0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 68px;
 }
 .score-circle { 
   width: 44px; height: 44px; border-radius: 50%; background: #722ed1; color: #fff; 
@@ -851,6 +855,7 @@ const priorityRisks = computed(() => {
   border: 1px solid #eee; 
   transition: all 0.3s ease; 
   position: relative;
+  height: 65px;
 }
 .status-badge:hover { transform: translateY(-2px); }
 .badge-label { 
@@ -914,8 +919,9 @@ const priorityRisks = computed(() => {
 /* 引导区：背景微调为极浅紫灰，增加质感 */
 .guidance-section {
   padding: 20px;
-  background: #fdfefe; /* 保持您要求的极简白 */
+  /* background: #fdfefe; 保持您要求的极简白 */
   border-bottom: 1px solid #f1f5f9; /* 稍微淡化边框线 */
+  height: 220px;
 }
 
 .header-row {
@@ -951,7 +957,7 @@ const priorityRisks = computed(() => {
   font-size: 13px;
   line-height: 1.6;
   color: #475569;
-  background: #f8fafc;
+  background: #fff;
   padding: 12px;
   border-radius: 8px;
   border-left: 4px solid #722ed1; /* 紫色强调线 */
