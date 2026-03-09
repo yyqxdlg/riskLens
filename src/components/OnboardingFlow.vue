@@ -4,7 +4,7 @@
       <div class="onboarding-header">
         <div>
           <p class="eyebrow">Interactive Intake</p>
-          <h1 class="title">Build a profile before the dashboard loads</h1>
+          <h1 class="title">Build your own profile</h1>
         </div>
         <a-button class="skip-all" @click="handleSkipAll">Skip to dashboard</a-button>
       </div>
@@ -65,7 +65,7 @@ const steps = [
     label: 'Age',
     type: 'numeric',
     prompt: 'How old are you?',
-    help: 'Enter your exact value. If unknown, skip this step.',
+    help: 'If unknown, skip this step.',
     inputLabel: 'Exact age',
     placeholder: 'e.g. 39',
     range: [18, 95]
@@ -75,7 +75,7 @@ const steps = [
     label: 'BMI',
     type: 'numeric',
     prompt: 'What is your BMI?',
-    help: 'Enter your exact value. If unknown, skip this step.',
+    help: 'If unknown, skip this step.',
     inputLabel: 'Exact BMI',
     placeholder: 'e.g. 23.4',
     range: [14.9, 68.9]
@@ -85,7 +85,7 @@ const steps = [
     label: 'SBP',
     type: 'numeric',
     prompt: 'What is your systolic blood pressure?',
-    help: 'Enter your exact value. If unknown, skip this step.',
+    help: 'If unknown, skip this step.',
     inputLabel: 'Exact SBP',
     placeholder: 'e.g. 128',
     range: [80, 220]
@@ -95,7 +95,7 @@ const steps = [
     label: 'CHOL',
     type: 'numeric',
     prompt: 'What is your total cholesterol level?',
-    help: 'Enter your exact value. If unknown, skip this step.',
+    help: 'If unknown, skip this step.',
     inputLabel: 'Exact CHOL',
     placeholder: 'e.g. 210',
     range: [100, 450]
