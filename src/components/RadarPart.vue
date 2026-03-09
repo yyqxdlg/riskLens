@@ -156,15 +156,15 @@ const hasValue = (value) => {
   return value !== null && value !== undefined && value !== ''
 }
 
-const selectedRows = computed(() => [
-  ...(props.processObject?.selectedCVD || []),
-  ...(props.processObject?.selectedNoCVD || [])
-])
+// const selectedRows = computed(() => [
+//   ...(props.processObject?.selectedCVD || []),
+//   ...(props.processObject?.selectedNoCVD || [])
+// ])
 
-const totalRows = computed(() => [
-  ...(props.processObject?.unselectedCVD || []),
-  ...(props.processObject?.unselectedNoCVD || [])
-])
+// const totalRows = computed(() => [
+//   ...(props.processObject?.unselectedCVD || []),
+//   ...(props.processObject?.unselectedNoCVD || [])
+// ])
 
 const hasInputs = computed(() =>
   hasValue(props.userInputs?.age)
@@ -174,23 +174,23 @@ const hasInputs = computed(() =>
   || hasValue(props.userInputs?.diabetes)
 )
 
-const hasSubgroupSelection = computed(() =>
-  totalRows.value.length > 0
-  && selectedRows.value.length > 0
-  && selectedRows.value.length < totalRows.value.length
-)
+// const hasSubgroupSelection = computed(() =>
+//   totalRows.value.length > 0
+//   && selectedRows.value.length > 0
+//   && selectedRows.value.length < totalRows.value.length
+// )
 
-const subgroupAverageProfile = computed(() => {
-  if (!selectedRows.value.length) return null
-  const avg = averageMetrics(selectedRows.value)
-  return {
-    age: avg[0],
-    bmi: avg[1],
-    sbp: avg[2],
-    chol: avg[3],
-    diabetes: avg[4]
-  }
-})
+// const subgroupAverageProfile = computed(() => {
+//   if (!selectedRows.value.length) return null
+//   const avg = averageMetrics(selectedRows.value)
+//   return {
+//     age: avg[0],
+//     bmi: avg[1],
+//     sbp: avg[2],
+//     chol: avg[3],
+//     diabetes: avg[4]
+//   }
+// })
 
 const activeProfile = computed(() => {
   if (hasInputs.value) {
@@ -202,11 +202,13 @@ const activeProfile = computed(() => {
       diabetes: normalizeDiabetesInput(props.userInputs?.diabetes)
     }
   }
-  return hasSubgroupSelection.value ? subgroupAverageProfile.value : null
+  // return hasSubgroupSelection.value ? subgroupAverageProfile.value : null
+  return null
 })
 
 const activeProfileSeriesName = computed(() => (
-  hasInputs.value ? 'My Data' : hasSubgroupSelection.value ? 'Subgroup Avg' : 'My Data'
+  'My Data'
+  // hasInputs.value ? 'My Data' : hasSubgroupSelection.value ? 'Subgroup Avg' : 'My Data'
 ))
 
 const buildRadarData = () => {
@@ -326,151 +328,7 @@ onBeforeUnmount(() => {
 })
 
 
-// const getStatus = (key, val) => {
-//   const v = key === 'diabetes' ? val :Number(val)
-//   if (!val && val !== 0) return { category: '--', level: 'none' }
-  
-//   if (key === 'age') {
-//     if (v < 40) return { category: 'Young Adult', level: 'normal' }
-//     if (v < 60) return { category: 'Middle-Aged', level: 'warning' }
-//     if (v < 75) return { category: 'Senior', level: 'danger' }
-//     return { category: 'Elderly', level: 'danger' }
-//   }
-//   if (key === 'bmi') {
-//     if (v < 18.5) return { category: 'Underweight', level: 'warning' }
-//     if (v < 25) return { category: 'Healthy', level: 'normal' }
-//     if (v < 30) return { category: 'Overweight', level: 'warning' }
-//     if (v < 35) return { category: 'Obese I', level: 'danger' }
-//     return { category: 'Severe Obesity', level: 'danger' }
-//   }
-//   if (key === 'sbp') {
-//     if (v < 120) return { category: 'Normal', level: 'normal' }
-//     if (v < 130) return { category: 'Elevated', level: 'warning' }
-//     if (v < 140) return { category: 'Stage 1', level: 'danger' }
-//     if (v < 180) return { category: 'Stage 2', level: 'danger' }
-//     return { category: 'Crisis', level: 'danger' }
-//   }
-//   if (key === 'chol') {
-//     if (v < 200) return { category: 'Desirable', level: 'normal' }
-//     if (v < 240) return { category: 'Borderline', level: 'warning' }
-//     return { category: 'High', level: 'danger' }
-//   }
-//   if (key === 'diabetes') {
-//     if (v === 0) return { category: 'Non-Diabetic', level: 'normal' }
-//     if (v === 1) return { category: 'Diabetic', level: 'danger' }
-    
-//   }
-//   return { category: '--', level: 'none' }
-// }
 
-// const filterKeyMap = {
-//   age: 'ageGroup',
-//   bmi: 'bmiGroup',
-//   sbp: 'bpGroup',
-//   chol: 'lipidGroup',
-//   diabetes: 'diabetesLabel'
-// }
-
-// const filterStatusMap = {
-//   age: {
-//     'Young Adult': { category: 'Young Adult', level: 'normal' },
-//     'Middle-Aged': { category: 'Middle-Aged', level: 'warning' },
-//     'Senior': { category: 'Senior', level: 'danger' },
-//     'Elderly': { category: 'Elderly', level: 'danger' }
-//   },
-//   bmi: {
-//     Underweight: { category: 'Underweight', level: 'warning' },
-//     Healthy: { category: 'Healthy', level: 'normal' },
-//     Overweight: { category: 'Overweight', level: 'warning' },
-//     'Obese I': { category: 'Obese I', level: 'danger' },
-//     'Severe Obesity': { category: 'Severe Obesity', level: 'danger' },
-//     Severe: { category: 'Severe Obesity', level: 'danger' }
-//   },
-//   sbp: {
-//     Low: { category: 'Low', level: 'warning' },
-//     Normal: { category: 'Normal', level: 'normal' },
-//     Elevated: { category: 'Elevated', level: 'warning' },
-//     'Stage 1': { category: 'Stage 1', level: 'danger' },
-//     'Stage 2': { category: 'Stage 2', level: 'danger' },
-//     Crisis: { category: 'Crisis', level: 'danger' },
-//     'S1': { category: 'Stage 1', level: 'danger' },
-//     'S2': { category: 'Stage 2', level: 'danger' },
-//     'Elev.': { category: 'Elevated', level: 'warning' }
-//   },
-//   chol: {
-//     Desirable: { category: 'Desirable', level: 'normal' },
-//     Borderline: { category: 'Borderline', level: 'warning' },
-//     High: { category: 'High', level: 'danger' },
-//     Extreme: { category: 'Extreme', level: 'danger' },
-//     'Desir.': { category: 'Desirable', level: 'normal' },
-//     Border: { category: 'Borderline', level: 'warning' }
-//   },
-//   diabetes: {
-//     'Non-Diabetic': { category: 'Non-Diabetic', level: 'normal' },
-//     Diabetic: { category: 'Diabetic', level: 'danger' },
-//     'Non-DM': { category: 'Non-Diabetic', level: 'normal' },
-//     DM: { category: 'Diabetic', level: 'danger' }
-//   }
-// }
-
-// const getFilterStatus = (key) => {
-//   const filterKey = filterKeyMap[key]
-//   const values = props.activeFilters?.[filterKey] || []
-//   if (!values.length) return { category: '--', level: 'none' }
-//   if (values.length > 1) {
-//     return { category: `${values.length} selected`, level: 'warning' }
-//   }
-//   return filterStatusMap[key]?.[values[0]] || { category: values[0], level: 'warning' }
-// }
-
-// const getBadgeStatus = (key, value) => {
-//   if (key === 'diabetes') {
-//     if (value === 0 || value === 1) return getStatus(key, value)
-//     return getFilterStatus(key)
-//   }
-//   if (Number.isFinite(value)) return getStatus(key, value)
-//   return getFilterStatus(key)
-// }
-
-// const badgeData = computed(() => [
-//   {
-//     key: 'age',
-//     label: 'Age',
-//     ...getBadgeStatus(
-//       'age',
-//       hasValue(props.userInputs?.age) ? asNumber(props.userInputs?.age, null) : null
-//     )
-//   },
-//   {
-//     key: 'bmi',
-//     label: 'BMI',
-//     ...getBadgeStatus(
-//       'bmi',
-//       hasValue(props.userInputs?.bmi) ? asNumber(props.userInputs?.bmi, null) : null
-//     )
-//   },
-//   {
-//     key: 'sbp',
-//     label: 'SBP',
-//     ...getBadgeStatus(
-//       'sbp',
-//       hasValue(props.userInputs?.sbp) ? asNumber(props.userInputs?.sbp, null) : null
-//     )
-//   },
-//   {
-//     key: 'chol',
-//     label: 'CHOL',
-//     ...getBadgeStatus(
-//       'chol',
-//       hasValue(props.userInputs?.chol) ? asNumber(props.userInputs?.chol, null) : null
-//     )
-//   },
-//   {
-//     key: 'diabetes',
-//     label: 'Diabetes',
-//     ...getBadgeStatus('diabetes', normalizeDiabetesInput(props.userInputs?.diabetes))
-//   }
-// ])
 
 const hasFilter = computed (()=>{
   return  detailedScores.value.filter(d => !d.isMissing).length;
@@ -501,131 +359,6 @@ const badgeData = computed(() => {
     };
   });
 });
-// const badgeData = computed(() => {
-//   const ui = props.userInputs || {};
-
-//   // 定义指标映射关系，确保 key 能对应上 props
-//   const metricsMap = [
-//     { key: 'age', label: 'Age', inputKey: 'age' },
-//     { key: 'bmi', label: 'BMI', inputKey: 'bmi' },
-//     { key: 'sbp', label: 'SBP', inputKey: 'sbp' },
-//     { key: 'chol', label: 'CHOL', inputKey: 'chol' },
-//     { key: 'diabetes', label: 'Diabetes', inputKey: 'diabetes' }
-//   ];
-
-//   return metricsMap.map(metric => {
-//     const rawVal = ui[metric.inputKey];
-    
-//     // 1. 判断是否有输入值
-//     const hasInput = (metric.key === 'diabetes') 
-//       ? (rawVal && rawVal.length > 0) 
-//       : (rawVal !== undefined && rawVal !== null && rawVal !== '');
-
-//     // 如果没有输入，返回初始/待定状态
-//     if (!hasInput) {
-//       return {
-//         ...metric,
-//         ...getBadgeStatus(metric.key, null), // 保留原有的状态获取逻辑
-//         score: 0,
-//         category: "Pending",
-//         level: "none",
-//         reason: "No input",
-//         value: null,
-//         isMissing: true
-//       };
-//     }
-//     console.log(metric,'metric')
-//     // 2. 格式化数值
-//     let val = metric.key === 'diabetes' 
-//       ? (normalizeDiabetesInput(rawVal) === 'Diabetic' ? 1 : 0) 
-//       : Number(rawVal);
-
-//     // 3. 计算评分逻辑 (原 detailedScores 逻辑)
-//     let score = 0, category = "", level = "", reason = "";
-
-//     switch (metric.key) {
-//       case 'age':
-//         if (val < 40) { score = 1; category = "Young Adult"; level = "normal"; reason = "Healthy Stage (+1)"; }
-//         else if (val < 60) { score = 0; category = "Middle-Aged"; level = "warning"; reason = "Screening Window (0)"; }
-//         else { score = 0; category = val < 75 ? "Senior" : "Elderly"; level = "danger"; reason = "Standard risk (0)"; }
-//         break;
-//       case 'bmi':
-//         if (val >= 18.5 && val < 25) { score = 1; category = "Healthy"; level = "normal"; reason = "Healthy BMI (+1)"; }
-//         else if (val < 18.5 || val < 30) { score = -1; category = val < 18.5 ? "Underweight" : "Overweight"; level = "warning"; reason = "Deviated (-1)"; }
-//         else if (val < 35) { score = -2; category = "Obese I"; level = "danger"; reason = "Obesity Class I (-2)"; }
-//         else { score = -3; category = "Severe Obesity"; level = "danger"; reason = "Significant Risk (-3)"; }
-//         break;
-//       case 'sbp': // 对应原 bp 逻辑
-//         if (val < 120) { score = 1; category = "Normal"; level = "normal"; reason = "Normal (+1)"; }
-//         else if (val < 130) { score = -1; category = "Elevated"; level = "warning"; reason = "Elevated (-1)"; }
-//         else if (val < 180) { score = -2; category = val < 140 ? "Stage 1" : "Stage 2"; level = "danger"; reason = "Hypertension (-2)"; }
-//         else { score = -3; category = "Crisis"; level = "danger"; reason = "Crisis (-3)"; }
-//         break;
-//       case 'chol': // 对应原 lipids 逻辑
-//         if (val < 200) { score = 1; category = "Desirable"; level = "normal"; reason = "Optimal (+1)"; }
-//         else if (val < 240) { score = -1; category = "Borderline"; level = "warning"; reason = "Borderline (-1)"; }
-//         else if (val < 400) { score = -2; category = "High"; level = "danger"; reason = "High Chol (-2)"; }
-//         else { score = -3; category = "Extreme"; level = "danger"; reason = "Extreme Risk (-3)"; }
-//         break;
-//       case 'diabetes':
-//         if (val === 0) { score = 1; category = "Non-Diabetic"; level = "normal"; reason = "Healthy (+1)"; }
-//         else if(val === "diabetes") { score = -3; category = "Diabetic"; level = "danger"; reason = "Major Risk (-3)"; }
-//         break;
-//     }
-
-//     // 4. 合并结果
-//     return {
-//       ...metric,
-//       // 依然调用 getBadgeStatus 来获取颜色、图标等原有配置
-//       ...getBadgeStatus(metric.key, val), 
-//       score,
-//       category,
-//       level,
-//       reason,
-//       value: val,
-//       isMissing: false
-//     };
-//   });
-// });
-// const healthSummary = computed(() => {
-//   const profile = activeProfile.value
-//   const data = buildRadarData();
-//   const benchmark = data.benchmarkHealthy;
-//   const subgroupCount = selectedRows.value.length
-
-//   if (!profile) return "Awaiting profile input or subgroup selection to generate clinical analysis...";
-
-//   if (hasSubgroupSelection.value && subgroupCount === 0) {
-//     return "⚠️ Insufficient Data: No clinical peers match the current filters. Unable to perform benchmark comparison.";
-//   }
-
-//   const deviations = [
-//     { name: 'BMI', diff: benchmark[1] > 0 ? (profile.bmi / benchmark[1]) - 1 : 0 },
-//     { name: 'Blood Pressure', diff: benchmark[2] > 0 ? (profile.sbp / benchmark[2]) - 1 : 0 },
-//     { name: 'Cholesterol', diff: benchmark[3] > 0 ? (profile.chol / benchmark[3]) - 1 : 0 }
-//   ];
-
-//   const majorRisks = deviations
-//     .filter(d => d.diff > 0.1) 
-//     .sort((a, b) => b.diff - a.diff);
-
-//   if (!hasInputs.value && hasSubgroupSelection.value) {
-//     if (majorRisks.length === 0) {
-//       return `Subgroup profile: ${subgroupCount.toLocaleString()} matched individuals remain close to the healthy benchmark across the major clinical axes.`
-//     }
-//     const topRisk = majorRisks[0]
-//     const riskLevel = topRisk.diff > 0.3 ? 'clear' : 'mild'
-//     return `Subgroup profile: ${subgroupCount.toLocaleString()} matched individuals show a ${riskLevel} elevation in ${topRisk.name} relative to the healthy benchmark.`
-//   }
-
-//   if (majorRisks.length === 0) {
-//     return "✅ Your clinical profile is within the healthy benchmark. Your metrics align well with the non-CVD population.";
-//   } else {
-//     const topRisk = majorRisks[0];
-//     const riskLevel = topRisk.diff > 0.3 ? 'significantly' : 'slightly';
-//     return `⚠️ Your profile shows a ${riskLevel} deviation in ${topRisk.name} compared to the healthy average. Focus on this axis for risk mitigation.`;
-//   }
-// });
 
 
 // new grade rule
