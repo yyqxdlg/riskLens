@@ -43,6 +43,23 @@
     </div>
 
     <div class="control-row">
+      <div class="mode-switch" aria-label="Range chart mode">
+        <span
+          class="mode-chip"
+          :class="{ active: viewMode === 'composition' }"
+          @click="setViewMode('composition')"
+        >
+          Composition
+        </span>
+        <span
+          class="mode-chip"
+          :class="{ active: viewMode === 'impact' }"
+          @click="setViewMode('impact')"
+        >
+          Impact
+        </span>
+      </div>
+
       <div class="row-meta">
         <span class="selection-state" :class="{ active: hasAnyLeftSelection }" :title="selectionSummaryText">
           {{ selectionSummaryText }}
@@ -1589,6 +1606,12 @@ const renderUserMarkersOnly = () => {
   })
 }
 
+const setViewMode = (mode) => {
+  if (!['composition', 'impact'].includes(mode) || viewMode.value === mode) return
+  viewMode.value = mode
+  renderChart()
+}
+
 const toggleCategorySelection = (dimKey, category) => {
   const current = [...normalizeSelection(dimKey, selectedByDim.value[dimKey] || [])]
   const idx = current.indexOf(category)
@@ -1966,10 +1989,38 @@ watch(
   height: 36px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   border-top: 1px solid rgba(148, 163, 184, 0.28);
   background: linear-gradient(180deg, rgba(248, 251, 255, 0.78), rgba(244, 248, 253, 0.78));
   padding: 0 10px;
+}
+
+.mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+  flex-shrink: 0;
+}
+
+.mode-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.mode-chip.active {
+  color: #0f172a;
+  background: linear-gradient(180deg, rgba(219, 234, 254, 0.92), rgba(191, 219, 254, 0.92));
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.35);
 }
 
 .row-meta {
