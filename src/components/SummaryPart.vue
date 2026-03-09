@@ -346,7 +346,9 @@ const prevalenceDiff = computed(() => {
   border-radius: 8px;
   border-left: 4px solid #1890ff;
   margin-bottom: 15px;
-  height: 68px;
+  height: 110px;
+  display: flex;
+  align-items: center;
 }
 
 .metrics-grid {

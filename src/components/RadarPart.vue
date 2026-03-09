@@ -239,6 +239,7 @@ const initChart = () => {
 
   const option = {
     tooltip: { trigger: 'item' },
+    color: ['#ff4d4f', '#1890ff', '#722ed1'],
     legend: {
       data: ['CVD Avg', 'Healthy Avg', activeProfileSeriesName.value],
       // bottom: 5,
@@ -796,7 +797,7 @@ const priorityRisks = computed(() => {
   margin-bottom: 15px;
   display: flex; align-items: center; padding: 15px; border-radius: 10px; 
   margin-bottom: 20px; border-left: 6px solid #e2e8f0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  height: 68px;
+  height: 110px;
 }
 .score-circle { 
   width: 44px; height: 44px; border-radius: 50%; background: #722ed1; color: #fff; 
