@@ -172,13 +172,10 @@ import TeamPage from './components/TeamPage.vue';
     const right = dedupe(fromForm);
 
     if (!left.length && !right.length) return [];
-    if (!left.length) return right;
-    if (!right.length) return left;
-    const inter = left.filter(item => right.includes(item));
-    if (inter.length) return inter;
-    // If the user re-selects on the range chart after typing,
-    // treat the latest chart interaction as the active filter for that dimension.
-    return left;
+    // Range-chart selection is authoritative once present.
+    // Form values provide the default only when the chart has no selection.
+    if (left.length) return left;
+    return right;
   };
 
   const rebuildActiveFilters = () => {
