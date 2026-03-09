@@ -7,10 +7,34 @@
             Main
           </span>
         </template>
-        <div class="page-shell">
+        <OnboardingFlow
+          v-if="showOnboarding"
+          @complete="handleOnboardingComplete"
+        />
+        <section v-else-if="isDashboardBooting" class="onboarding-loading-shell">
+          <div class="onboarding-loading-card">
+            <div class="loader-badge" aria-hidden="true">
+              <span class="loader-ring"></span>
+              <span class="loader-heart">♥</span>
+            </div>
+            <p class="loading-kicker">Preparing dashboard</p>
+            <h2>Linking your profile to the cohort</h2>
+            <p class="loading-copy">
+              Mapping your answers, recalculating subgroup distributions, and generating the clinical comparison.
+            </p>
+            <div class="loading-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </section>
+        <div v-else class="page-shell">
           <section class="panel-card form-card">
             <UserForm
-              :clearSignal="clearSignal"
+              :clearSignal="formClearSignal"
+              :initialFilters="formFilters"
+              :initialValues="userInputs"
               @updateFilters="onFormFiltersUpdate"
               @updateUserInputs="onUserInputsUpdate"
               @openTimeMachine="showOlderModal"
@@ -18,7 +42,7 @@
           </section>
           <section class="panel-card topFilterRow">
             <div class="topFilterContent">
-              <TopFilter :activeFilters="activeFilters"></TopFilter>
+              <TopFilter :activeFilters="activeFilters" @remove="handleTopFilterRemove"></TopFilter>
             </div>
             <div class="topActions">
               <a-button class="clearAllBtn" @click="clearAllFilters">Clear All Filters</a-button>
@@ -30,7 +54,8 @@
                 :rawGroupData="rawGroupData"
                 :contextFilters="formFilters"
                 :userInputs="userInputs"
-                :clearSignal="clearSignal"
+                :clearSignal="rangeClearSignal"
+                :clearRequest="clearFilterRequest"
                 @updateFilters="onRangeFiltersUpdate"
                 @updateSelection="onRangeSelectionUpdate"
               />
@@ -95,6 +120,7 @@
 import {ref, onMounted, watch, computed} from 'vue'
 import { HeartTwoTone, IdcardTwoTone ,BulbTwoTone} from '@ant-design/icons-vue';
 import UserForm from './components/UserForm.vue'
+import OnboardingFlow from './components/OnboardingFlow.vue'
 import RadarPart from './components/RadarPart.vue'
 import RangePart from './components/RangePart.vue'
 import SummaryPart from './components/SummaryPart.vue'
@@ -116,12 +142,16 @@ import TeamPage from './components/TeamPage.vue';
   })
  
   const activeKey = ref('1');
+  const showOnboarding = ref(true)
+  const isDashboardBooting = ref(false)
 
   const activeFilters = ref(emptyFilterMap());
   const rangeFilters = ref(emptyFilterMap());
   const rangeSelectedRowIds = ref(null);
+  const clearFilterRequest = ref({ token: 0, key: '' })
   const formFilters = ref(emptyFilterMap());
-  const clearSignal = ref(0);
+  const formClearSignal = ref(0);
+  const rangeClearSignal = ref(0);
   const emptyUserInputs = () => ({
     age: null,
     bmi: null,
@@ -134,6 +164,8 @@ import TeamPage from './components/TeamPage.vue';
   const processArray = ref(null)
 
   const dedupe = (arr = []) => [...new Set(arr)];
+  const isFilterMapEmpty = (filters = {}) =>
+    !Object.values(filters).some((arr) => Array.isArray(arr) && arr.length > 0)
 
   const mergeFiltersByIntersection = (fromRange = [], fromForm = []) => {
     const left = dedupe(fromRange);
@@ -171,12 +203,19 @@ import TeamPage from './components/TeamPage.vue';
   const onFormFiltersUpdate = (val) => {
     const nextForm = { ...formFilters.value, ...val };
     const nextRange = { ...rangeFilters.value };
+    const shouldClearRangeAll = isFilterMapEmpty(nextForm)
 
-    Object.keys(nextForm).forEach((key) => {
-      if ((nextForm[key] || []).length > 0) {
-        nextRange[key] = []
-      }
-    });
+    if (shouldClearRangeAll) {
+      Object.assign(nextRange, emptyFilterMap())
+      rangeSelectedRowIds.value = null
+      rangeClearSignal.value += 1
+    } else {
+      Object.keys(nextForm).forEach((key) => {
+        if ((nextForm[key] || []).length > 0) {
+          nextRange[key] = []
+        }
+      });
+    }
 
     formFilters.value = nextForm;
     rangeFilters.value = nextRange;
@@ -187,13 +226,43 @@ import TeamPage from './components/TeamPage.vue';
     userInputs.value = { ...userInputs.value, ...val };
   };
 
+  const handleTopFilterRemove = ({ key, value }) => {
+    formFilters.value = {
+      ...formFilters.value,
+      [key]: (formFilters.value[key] || []).filter(item => item !== value)
+    }
+    rangeFilters.value = {
+      ...rangeFilters.value,
+      [key]: (rangeFilters.value[key] || []).filter(item => item !== value)
+    }
+    rangeSelectedRowIds.value = null
+    rebuildActiveFilters()
+    clearFilterRequest.value = {
+      token: clearFilterRequest.value.token + 1,
+      key
+    }
+  }
+
+  const handleOnboardingComplete = ({ filters, userInputs: nextInputs }) => {
+    isDashboardBooting.value = true
+    showOnboarding.value = false
+    formFilters.value = { ...emptyFilterMap(), ...(filters || {}) }
+    rangeFilters.value = emptyFilterMap()
+    rangeSelectedRowIds.value = null
+    userInputs.value = { ...emptyUserInputs(), ...(nextInputs || {}) }
+    rebuildActiveFilters()
+    rangeClearSignal.value += 1
+    window.setTimeout(() => {
+      isDashboardBooting.value = false
+    }, 980)
+  }
+
   const clearAllFilters = () => {
     formFilters.value = emptyFilterMap();
     rangeFilters.value = emptyFilterMap();
     rangeSelectedRowIds.value = null;
-    userInputs.value = emptyUserInputs();
     rebuildActiveFilters();
-    clearSignal.value += 1;
+    rangeClearSignal.value += 1;
   };
 
   const processData = () => {
@@ -314,29 +383,125 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 }
 
 :deep(.ant-tabs-nav) {
-  margin-bottom: 12px;
-  padding: 0 14px;
+  margin-bottom: 10px;
+  padding: 0 8px;
 }
 
 .page-shell {
-  width: calc(100vw - 24px);
-  max-width: none;
+  width: 100%;
+  max-width: 1360px;
   margin: 0 auto;
-  padding: 0 12px 14px;
+  padding: 0 10px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+}
+
+.onboarding-loading-shell {
+  min-height: calc(100vh - 84px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.onboarding-loading-card {
+  width: min(560px, 100%);
+  padding: 42px 34px;
+  text-align: center;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+    radial-gradient(100% 100% at 50% 0%, rgba(59, 130, 246, 0.12), transparent 52%),
+    radial-gradient(100% 100% at 50% 100%, rgba(14, 165, 233, 0.08), transparent 48%),
+    #ffffff;
+  box-shadow: 0 24px 58px rgba(15, 23, 42, 0.08);
+}
+
+.loader-badge {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(248, 250, 252, 0.2) 34%, rgba(239, 68, 68, 0.12) 35%, rgba(239, 68, 68, 0.03) 70%, transparent 72%);
+}
+
+.loader-heart {
+  position: relative;
+  z-index: 1;
+  font-size: 34px;
+  line-height: 1;
+  color: #e11d48;
+  text-shadow:
+    0 0 0 rgba(244, 63, 94, 0.24),
+    0 0 18px rgba(244, 63, 94, 0.16);
+  animation: loaderBeat 1.05s ease-in-out infinite;
+}
+
+.loading-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.onboarding-loading-card h2 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.loading-copy {
+  margin: 0 auto;
+  max-width: 420px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #475569;
+}
+
+.loading-dots {
+  margin-top: 14px;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.loading-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.32);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
 .panel-card {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(148, 163, 184, 0.23);
-  border-radius: 14px;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
 }
 
 .form-card {
-  padding: 12px 14px 10px;
+  padding: 10px 12px 8px;
 }
 
 .topFilterRow {
@@ -374,18 +539,18 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 .mainChartsRow {
   display: block;
   width: 100%;
-  min-height: 456px;
+  min-height: 440px;
 }
 
 .rangePart {
   width: 100%;
-  height: 456px;
-  min-height: 456px;
-  padding: 8px 8px 4px;
+  height: 440px;
+  min-height: 440px;
+  padding: 8px 8px 6px;
 }
 
 .rightPart {
-  min-height: 456px;
+  min-height: 440px;
   padding: 8px;
 }
 
@@ -394,19 +559,19 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
   width: 100%;
   height: 100%;
   align-items: stretch;
-  gap: 6px;
+  gap: 10px;
   justify-content: space-around;
 }
 
 .radarPart {
   width: 48%;
-  height: 700px;
+  height: 640px;
   min-height: 0;
 }
 
 .summaryPart {
   width: 48%;
-  height: 700px;
+  height: 640px;
   min-height: 0;
 }
 
@@ -417,8 +582,8 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 
   .rangePart,
   .rightPart {
-    height: 460px;
-    min-height: 460px;
+    height: 440px;
+    min-height: 440px;
   }
 }
 
@@ -442,6 +607,22 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
     width: 100%;
     height: 50%;
   }
+
+  .onboarding-loading-card {
+    padding: 32px 24px;
+  }
+}
+
+@keyframes loaderBeat {
+  0%, 100% { transform: scale(0.94); }
+  22% { transform: scale(1.1); }
+  40% { transform: scale(0.98); }
+  62% { transform: scale(1.05); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.35; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
 }
 .red { color: #cf1322; }
 .blue { color: #096dd9; }

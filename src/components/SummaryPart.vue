@@ -303,7 +303,7 @@ const prevalenceDiff = computed(() => {
   padding: 20px;
   background: #f8fbff;
   border-bottom: 1px solid #e6effb;
-  height: 220px;
+  height: 270px;
 }
 
 .header-row {

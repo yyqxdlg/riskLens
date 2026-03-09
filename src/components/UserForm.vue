@@ -3,67 +3,56 @@
     <a-form
       :model="formState"
       name="userForm"
-      :label-col="{ span: 8 }"
-      :wrapper-col="{ span: 16 }"
       autocomplete="off"
-      class="user-form-grid"
+      class="intake-form"
     >
-      <a-row :gutter="16">
-        <a-col v-for="field in numericFields" :key="field.key" :span="6">
-          <a-form-item
-            :label="field.label"
-            :name="field.key"
-          >
-          <div class="iconParent">
+      <div class="compact-grid">
+        <div
+          v-for="field in numericFields"
+          :key="field.key"
+          class="field-inline"
+        >
+          <span class="inline-label">{{ field.label }}:</span>
+          <div class="inline-control-wrap">
             <a-input
               v-model:value="formState[field.key]"
+              size="large"
+              class="inline-control"
             />
-
-            
-             <a-tooltip :title="field.description" color="#108ee9">
-              
-              <InfoCircleTwoTone style="padding-left: 6px;"  />
+            <a-tooltip :title="field.description" color="#108ee9">
+              <InfoCircleTwoTone class="inline-tip" />
             </a-tooltip>
-          </div>  
-          
-            
-          </a-form-item>
-        </a-col>
-        
-      </a-row>
-      <a-row :gutter="16">
-        <a-col :span="6">
-          <a-form-item label="hasDiabetes" name="diabetesSelections">
-            <div class="iconParent">
+          </div>
+        </div>
+
+        <div class="field-inline">
+          <span class="inline-label">Diabetes:</span>
+          <div class="inline-control-wrap">
             <a-select
               v-model:value="formState.diabetesSelections"
               :options="diabetesOptions"
+              size="large"
+              class="inline-control"
             />
-             <a-tooltip color="#108ee9" title="A measure of blood sugar levels. Having diabetes can significantly increase the risk of heart disease by damaging blood vessels over time.">
-
-              <InfoCircleTwoTone style="padding-left: 6px;"   />
+            <a-tooltip color="#108ee9" title="Diabetes status is a major cardiovascular risk factor.">
+              <InfoCircleTwoTone class="inline-tip" />
             </a-tooltip>
           </div>
-          </a-form-item>
-        </a-col>
-        <a-col >
-          <a-button style="margin:0 6px"  type="primary" @click="handleConfirm">confirm</a-button>
-          <a-button style="margin:0 6px" type="primary" @click="handleReset">reset</a-button>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <div class="action-group action-group-left">
           <a-tooltip color="#87d068" title="See how risk trends evolve for people like you over the next many years.">
-            <a-button style="margin:0 6px"  class="action-btn action-btn-primary" @click="openTimeMachine">
-            
+            <a-button class="sim-btn" @click="openTimeMachine">
               Risk Simulator
             </a-button>
           </a-tooltip>
-        </a-col>
-        <!-- <a-col :span="6">
-          <a-button  type="primary">reset</a-button>
-        </a-col> -->
-      </a-row>
-      <div class="actions-row">
-        <!-- <a-button size="small" class="action-btn action-btn-primary" @click="handleGetOlder">Get Older (+5y)</a-button> -->
-        
-        
+        </div>
+        <div class="action-group action-group-right">
+          <a-button class="confirm-btn" type="primary" @click="handleConfirm">Confirm</a-button>
+          <a-button class="reset-btn" @click="handleReset">Reset</a-button>
+        </div>
       </div>
     </a-form>
   </div>
@@ -79,6 +68,26 @@ const props = defineProps({
   clearSignal: {
     type: Number,
     default: 0
+  },
+  initialFilters: {
+    type: Object,
+    default: () => ({
+      ageGroup: [],
+      bmiGroup: [],
+      bpGroup: [],
+      lipidGroup: [],
+      diabetesLabel: []
+    })
+  },
+  initialValues: {
+    type: Object,
+    default: () => ({
+      age: null,
+      bmi: null,
+      sbp: null,
+      chol: null,
+      diabetes: null
+    })
   }
 })
 
@@ -114,6 +123,7 @@ const emptyFilters = () => ({
   lipidGroup: [],
   diabetesLabel: []
 })
+const seededFilters = ref(emptyFilters())
 
 const RANGE_LIMITS = {
   age: [18, 95],
@@ -142,7 +152,7 @@ const extractNumber = (input) => {
 // }
 
 const classifyFilters = () => {
-  const next = emptyFilters()
+  const next = { ...emptyFilters(), ...seededFilters.value }
 
   const ageRaw = extractNumber(formState.value.age)
   if (ageRaw !== null) {
@@ -189,7 +199,11 @@ const classifyFilters = () => {
   //   next.diabetesLabel = diabetesSelections
   // }
   const diabetesRaw = formState.value.diabetesSelections
-  next.diabetesLabel =  !diabetesRaw ? []: diabetesRaw === 'Non-Diabetic' ? ['Non-Diabetic'] : ['Diabetic']
+  next.diabetesLabel = !diabetesRaw
+    ? (seededFilters.value.diabetesLabel || [])
+    : diabetesRaw === 'Non-Diabetic'
+      ? ['Non-Diabetic']
+      : ['Diabetic']
   // console.log(diabetesRaw,next,'next')
   return next
 }
@@ -230,6 +244,24 @@ const emitCurrentState = () => {
   emit('updateUserInputs', buildUserInputs())
 }
 
+const toFormState = (values = {}) => ({
+  age: values.age ?? values.age === 0 ? String(values.age ?? '') : '',
+  bmi: values.bmi ?? values.bmi === 0 ? String(values.bmi ?? '') : '',
+  sbp: values.sbp ?? values.sbp === 0 ? String(values.sbp ?? '') : '',
+  chol: values.chol ?? values.chol === 0 ? String(values.chol ?? '') : '',
+  diabetesSelections: Array.isArray(values.diabetes)
+    ? (values.diabetes[0] || '')
+    : (values.diabetes === 1 ? 'Diabetic' : values.diabetes === 0 ? 'Non-Diabetic' : '')
+})
+
+const normalizeFilters = (filters = {}) => ({
+  ageGroup: [...(filters.ageGroup || [])],
+  bmiGroup: [...(filters.bmiGroup || [])],
+  bpGroup: [...(filters.bpGroup || [])],
+  lipidGroup: [...(filters.lipidGroup || [])],
+  diabetesLabel: [...(filters.diabetesLabel || [])]
+})
+
 const scheduleLiveEmit = () => {
   if (liveSyncTimer) clearTimeout(liveSyncTimer)
   liveSyncTimer = setTimeout(() => {
@@ -242,8 +274,8 @@ const scheduleLiveEmit = () => {
     scheduleLiveEmit()
   }
   const handleReset = () => {
+    seededFilters.value = emptyFilters()
     formState.value = emptyFormState()
-    emitCurrentState()
   }
 
 // watch(
@@ -255,8 +287,27 @@ const scheduleLiveEmit = () => {
 // )
 
 watch(
+  () => props.initialValues,
+  (nextValues) => {
+    const nextState = toFormState(nextValues)
+    if (JSON.stringify(nextState) === JSON.stringify(formState.value)) return
+    formState.value = nextState
+  },
+  { deep: true, immediate: true }
+)
+
+watch(
+  () => props.initialFilters,
+  (nextFilters) => {
+    seededFilters.value = normalizeFilters(nextFilters)
+  },
+  { deep: true, immediate: true }
+)
+
+watch(
   () => props.clearSignal,
   () => {
+    seededFilters.value = emptyFilters()
     handleReset()
   }
 )
@@ -272,89 +323,171 @@ onBeforeUnmount(() => {
 <style scoped>
 .user-form {
   width: 100%;
+  padding: 2px 0;
 }
 
-.ant-form-item {
-  margin-bottom: 9px;
+.intake-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-:deep(.ant-form-item-label > label) {
-  font-size: 14px;
+.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px 14px;
+  align-items: center;
+}
+
+.field-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.inline-label {
+  flex: 0 0 auto;
+  font-size: 13px;
   font-weight: 700;
   color: #334155;
+  line-height: 1;
 }
 
-.actions-row {
-  margin-top: 4px;
+.inline-control-wrap {
+  min-width: auto;
+  flex: 0 0 auto;
   display: flex;
-  gap: 9px;
+  align-items: center;
+  gap: 6px;
 }
 
-.action-btn {
-  border-radius: 10px;
+.inline-tip {
+  font-size: 14px;
+}
+
+:deep(.inline-control.ant-input),
+:deep(.inline-control.ant-select) {
+  width: 164px;
+}
+
+:deep(.ant-input),
+:deep(.ant-select-selector) {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  border-radius: 9px !important;
+  color: #0f172a;
+  height: 34px !important;
+  line-height: 34px !important;
+}
+
+:deep(.ant-select-selection-item),
+:deep(.ant-select-selection-placeholder) {
+  line-height: 32px !important;
+}
+
+:deep(.ant-input:focus),
+:deep(.ant-input-focused),
+:deep(.ant-select-focused .ant-select-selector) {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.14) !important;
+}
+
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.action-group {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.action-group-left {
+  justify-content: flex-start;
+}
+
+.action-group-right {
+  justify-content: flex-end;
+}
+
+.confirm-btn,
+.reset-btn,
+.sim-btn {
+  height: 34px;
+  border-radius: 9px;
+  font-weight: 600;
+  padding-inline: 18px;
+  min-width: 118px;
+}
+
+.confirm-btn {
+  background: linear-gradient(180deg, #2f7cff 0%, #1d4ed8 100%);
+  border-color: #1d4ed8;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+.confirm-btn:hover {
+  background: linear-gradient(180deg, #2563eb 0%, #1e40af 100%);
+  border-color: #1e40af;
+}
+
+.reset-btn,
+.sim-btn {
   border-color: #bfd4ea;
   color: #1e3a5f;
   background: #f8fbff;
-  font-weight: 600;
 }
 
-.action-btn:hover {
+.reset-btn:hover,
+.sim-btn:hover {
   border-color: #93c5fd;
   color: #1e40af;
   background: #f0f7ff;
 }
 
-.action-btn-primary {
-  border-color: #93c5fd;
-  color: #1d4ed8;
-  background: #eff6ff;
+.sim-btn {
+  min-width: 144px;
+  border-color: #fdba74;
+  color: #c2410c;
+  background: #fff7ed;
+  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.18);
 }
 
-.action-btn-primary:hover {
-  border-color: #60a5fa;
-  color: #1e3a8a;
-  background: #e0edff;
+.sim-btn:hover {
+  border-color: #fb923c;
+  color: #9a3412;
+  background: #ffedd5;
 }
 
-:deep(.ant-input) {
-  background: #ffffff !important;
-  border-color: #cbd5e1;
-  border-radius: 10px;
-  height: 38px;
-  color: #0f172a;
-}
-
-:deep(.ant-input:focus),
-:deep(.ant-input-focused) {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.14);
-}
-
-:deep(.ant-checkbox-group) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-}
-
-:deep(.ant-checkbox-wrapper) {
-  margin-inline-start: 0 !important;
-  padding: 3px 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  background: #f8fafc;
-}
-
-@media (max-width: 900px) {
-  .actions-row {
-    flex-wrap: wrap;
+@media (max-width: 1400px) {
+  .compact-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-.iconParent {
-    display: flex;
-    align-items: center;
+@media (max-width: 980px) {
+  .compact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
+  .action-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
 
+  .action-group-right {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .compact-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

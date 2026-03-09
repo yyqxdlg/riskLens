@@ -219,6 +219,7 @@ const bodyStyle = {
 // 监听与同步
 watch(() => props.modalState, async (newVal) => {
   open.value = !!newVal?.open;
+  console.log(props,'rrrrrr')
   if (open.value) {
     await nextTick();
     const data = runSimulation(newVal.userAge, newVal.otherInfo, props.rawGroupData);

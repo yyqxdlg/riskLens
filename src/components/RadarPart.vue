@@ -490,7 +490,7 @@ const priorityRisks = computed(() => {
   padding: 20px;
   /* background: #fdfefe; */
   background: #f8fbff;
-  height: 220px;
+  height: 270px;
   
   border-bottom: 1px solid #e6effb;
 }
@@ -655,7 +655,7 @@ const priorityRisks = computed(() => {
   padding: 20px;
   /* background: #fdfefe; 保持您要求的极简白 */
   border-bottom: 1px solid #f1f5f9; /* 稍微淡化边框线 */
-  height: 220px;
+  height: 270px;
 }
 
 .header-row {

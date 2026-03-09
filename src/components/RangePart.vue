@@ -108,7 +108,8 @@ const props = defineProps({
     type: Object,
     default: () => ({
       token: 0,
-      key: ''
+      key: '',
+      value: ''
     })
   }
 })
@@ -247,7 +248,7 @@ const dimensionLabelMap = {
 }
 const categoryRangeLabelMap = {
   ageGroup: {
-    'Young Adult': '18-39',
+    'Young Adult': '<39',
     'Middle-Aged': '40-59',
     Senior: '60-74',
     Elderly: '75+'
@@ -390,18 +391,8 @@ const getActiveSelectionsForRow = (skipDimKey) => {
 
   allDimensions.forEach((dim) => {
     if (dim.key === skipDimKey) return
-    const context = contextSelectionFor(dim.key)
     const selected = normalizeSelection(dim.key, selectedByDim.value[dim.key] || [])
 
-    if (context.length && selected.length) {
-      const overlap = selected.filter(item => context.includes(item))
-      activeSelections.push({ dimKey: dim.key, categories: overlap.length ? overlap : selected })
-      return
-    }
-    if (context.length) {
-      activeSelections.push({ dimKey: dim.key, categories: context })
-      return
-    }
     if (selected.length) {
       activeSelections.push({ dimKey: dim.key, categories: selected })
     }
@@ -593,26 +584,55 @@ const removeSelectionForDim = (dimKey) => {
   emitExactSelection()
 }
 
-const contextSelectionFor = (dimKey) => {
-  const incoming = props.contextFilters?.[dimKey] || []
-  const allCats = baseCategoriesByDim.value[dimKey] || []
-  return dedupe(incoming).filter(v => allCats.includes(v))
+const removeSelectionValueForDim = (dimKey, value) => {
+  if (!dimKey) return
+  const targetValue = typeof value === 'string' ? value : ''
+  if (!targetValue) {
+    removeSelectionForDim(dimKey)
+    return
+  }
+
+  const currentValues = normalizeSelection(dimKey, selectedByDim.value[dimKey] || [])
+  const nextValues = currentValues.filter(item => item !== targetValue)
+
+  const bars = rowDataByDim.value[dimKey]?.bars || []
+  const targetBarIds = new Set(
+    bars
+      .filter(bar => !bar.isGap && bar.category === targetValue)
+      .map(bar => bar.id)
+  )
+  const currentBarIds = selectedBarIdsByDim.value[dimKey] || []
+  const nextBarIds = currentBarIds.filter(id => !targetBarIds.has(id))
+
+  const valuesChanged = nextValues.length !== currentValues.length
+  const barsChanged = nextBarIds.length !== currentBarIds.length
+  if (!valuesChanged && !barsChanged) return
+
+  setMapValue(selectedByDim, dimKey, nextValues)
+  setMapValue(selectedBarIdsByDim, dimKey, nextBarIds)
+  rebuildAndRender()
+  emitAllFilters()
+  emitExactSelection()
 }
 
-const clearLocalSelectionsForChangedContext = (nextContext = {}) => {
+const applyDefaultSelectionsFromContext = (nextContext = {}) => {
   let changed = false
   const nextSelected = { ...selectedByDim.value }
   const nextBarIds = { ...selectedBarIdsByDim.value }
 
   chartDimensions.forEach((dim) => {
-    const nextValues = dedupe(nextContext?.[dim.key] || [])
-    if (!nextValues.length) return
+    const allCats = baseCategoriesByDim.value[dim.key] || []
+    const incomingValues = dedupe(nextContext?.[dim.key] || []).filter(v => allCats.includes(v))
+    const currentSelected = normalizeSelection(dim.key, nextSelected[dim.key] || [])
+    const currentBarIds = nextBarIds[dim.key] || []
 
-    if ((nextSelected[dim.key] || []).length) {
-      nextSelected[dim.key] = []
+    // Confirm always controls default subgroup selections:
+    // with value => select that group; without value => clear group (all included).
+    if (!sameArray(currentSelected, incomingValues)) {
+      nextSelected[dim.key] = incomingValues
       changed = true
     }
-    if ((nextBarIds[dim.key] || []).length) {
+    if (currentBarIds.length) {
       nextBarIds[dim.key] = []
       changed = true
     }
@@ -631,14 +651,8 @@ const matchesRowWithCombinedFilters = (row, skipDimKey) => {
     const value = row.displayGroups?.[dim.key]
     if (!value) return false
 
-    const context = contextSelectionFor(dim.key)
     const selected = normalizeSelection(dim.key, selectedByDim.value[dim.key] || [])
 
-    if (context.length && selected.length) {
-      const overlap = selected.filter(item => context.includes(item))
-      return (overlap.length ? overlap : selected).includes(value)
-    }
-    if (context.length) return context.includes(value)
     if (selected.length) return selected.includes(value)
     return true
   })
@@ -877,6 +891,37 @@ const parseSeriesId = (seriesId = '') => {
   return { dimKey, metric }
 }
 
+const buildMarkerOverlaySeries = (dimKey, rowIndex, markerIndex, bars, inImpactMode = false) => {
+  const axisCategory = normalizeMarkerAxisCategory(markerIndex, bars)
+  const rowMax = inImpactMode
+    ? (rowDataByDim.value[dimKey]?.impactAxisMax || 1)
+    : ((rowDataByDim.value[dimKey]?.zoomAxisMax || rowDataByDim.value[dimKey]?.axisMax || 1))
+  const markerData = (bars || []).map((bar, index) => {
+    if (bar?.isGap) return 0
+    return axisCategory !== null && index === axisCategory ? rowMax : 0
+  })
+  return {
+    id: makeSeriesId(dimKey, 'marker'),
+    name: '',
+    type: 'bar',
+    xAxisIndex: rowIndex,
+    yAxisIndex: rowIndex,
+    data: markerData,
+    barWidth: 2.5,
+    barMaxWidth: 3,
+    barGap: '-100%',
+    itemStyle: {
+      color: 'rgba(124,58,237,0)',
+      opacity: 0,
+      borderRadius: [0, 0, 0, 0]
+    },
+    tooltip: { show: false },
+    silent: true,
+    z: 130,
+    zlevel: 5
+  }
+}
+
 const buildTotalData = (dimKey, options = {}) => {
   const bars = rowDataByDim.value[dimKey]?.bars || []
   const selectedBarIds = new Set(selectedBarIdsByDim.value[dimKey] || [])
@@ -1024,7 +1069,21 @@ const getInputValueForDim = (dimKey) => {
   if (!inputKey) return null
 
   const rawSource = props.userInputs?.[inputKey]
-  if (rawSource === null || rawSource === undefined || rawSource === '') return null
+  if (rawSource === null || rawSource === undefined || rawSource === '') {
+    const fallbackCategory = (props.contextFilters?.[dimKey] || [])[0]
+    if (!fallbackCategory) return null
+    const window = CATEGORY_WINDOWS?.[dimKey]?.[fallbackCategory]
+    if (Array.isArray(window) && window.length === 2) {
+      const [min, max] = window
+      if (Number.isFinite(min) && Number.isFinite(max) && max > min) {
+        return (min + max) / 2
+      }
+    }
+    if (dimKey === 'diabetesLabel') {
+      return fallbackCategory === 'Diabetic' ? 1 : 0
+    }
+    return null
+  }
 
   if (dimKey === 'diabetesLabel') {
     if (Array.isArray(rawSource)) {
@@ -1125,69 +1184,19 @@ const resolveUserMarkerIndex = (dimKey, row) => {
   return firstVisible >= 0 ? firstVisible : null
 }
 
-const buildUserMarkLine = (markerIndex) => {
-  if (!Number.isFinite(markerIndex) || markerIndex < 0) {
-    return {
-      symbol: ['none', 'none'],
-      silent: true,
-      data: []
-    }
-  }
+const normalizeMarkerAxisCategory = (markerIndex, bars = []) => {
+  if (!Number.isFinite(markerIndex)) return null
+  const validIndices = bars
+    .map((bar, index) => ({ bar, index }))
+    .filter(({ bar }) => !bar.isGap)
+    .map(({ index }) => index)
+  if (!validIndices.length) return null
 
-  return {
-    symbol: ['none', 'none'],
-    silent: true,
-    precision: 2,
-    lineStyle: {
-      color: 'rgba(30,64,175,0.82)',
-      width: 1.4,
-      type: 'dashed',
-      opacity: 0.9
-    },
-    label: {
-      show: false
-    },
-    data: [{ xAxis: markerIndex }]
-  }
-}
-
-const buildImpactMarkLine = (markerIndex) => {
-  const data = [
-    {
-      yAxis: 1,
-      lineStyle: {
-        color: 'rgba(100,116,139,0.5)',
-        width: 1,
-        type: 'dashed',
-        opacity: 0.9
-      },
-      label: {
-        show: false
-      }
-    }
-  ]
-
-  if (Number.isFinite(markerIndex) && markerIndex >= 0) {
-    data.push({
-      xAxis: markerIndex,
-      lineStyle: {
-        color: 'rgba(30,64,175,0.82)',
-        width: 1.4,
-        type: 'dashed',
-        opacity: 0.9
-      },
-      label: {
-        show: false
-      }
-    })
-  }
-
-  return {
-    symbol: ['none', 'none'],
-    silent: true,
-    precision: 2,
-    data
-  }
+  const minIdx = validIndices[0]
+  const maxIdx = validIndices[validIndices.length - 1]
+  const rounded = Math.round(markerIndex)
+  const clamped = Math.max(minIdx, Math.min(maxIdx, rounded))
+  return clamped
 }
 
 const getSelectedIndexSegments = (dimKey) => {
@@ -1416,9 +1425,9 @@ const buildOption = () => {
         barCategoryGap,
         data: buildImpactData(dim.key),
         markArea: buildSelectionMarkArea(dim.key, row.impactAxisMax),
-        markLine: buildImpactMarkLine(markerIndex),
         z: 3
       })
+      series.push(buildMarkerOverlaySeries(dim.key, rowIndex, markerIndex, row.bars, true))
     } else {
       series.push({
         id: makeSeriesId(dim.key, 'total'),
@@ -1432,7 +1441,7 @@ const buildOption = () => {
         barGap: '-100%',
         data: buildTotalData(dim.key, { zoomed: shouldZoomCompositionAxis, zoomStrength }),
         markArea: buildSelectionMarkArea(dim.key, compositionAxisMax),
-        markLine: buildUserMarkLine(markerIndex),
+        markLine: { symbol: ['none', 'none'], silent: true, data: [] },
         z: 1
       })
 
@@ -1463,6 +1472,7 @@ const buildOption = () => {
         data: buildRiskData(dim.key, 'cvd'),
         z: 4
       })
+      series.push(buildMarkerOverlaySeries(dim.key, rowIndex, markerIndex, row.bars, false))
 
     }
   })
@@ -1576,15 +1586,19 @@ const renderUserMarkersOnly = () => {
   const series = chartDimensions.map((dim) => {
     const row = rowDataByDim.value[dim.key] || { bars: [] }
     const markerIndex = resolveUserMarkerIndex(dim.key, row)
-    return viewMode.value === 'impact'
-      ? {
-          id: makeSeriesId(dim.key, 'impact'),
-          markLine: buildImpactMarkLine(markerIndex)
-        }
-      : {
-          id: makeSeriesId(dim.key, 'total'),
-          markLine: buildUserMarkLine(markerIndex)
-        }
+    return {
+      id: makeSeriesId(dim.key, 'marker'),
+      data: (() => {
+        const axisCategory = normalizeMarkerAxisCategory(markerIndex, row.bars || [])
+        const rowMax = viewMode.value === 'impact'
+          ? (rowDataByDim.value[dim.key]?.impactAxisMax || 1)
+          : ((rowDataByDim.value[dim.key]?.zoomAxisMax || rowDataByDim.value[dim.key]?.axisMax || 1))
+        return (row.bars || []).map((bar, index) => {
+          if (bar?.isGap) return 0
+          return axisCategory !== null && index === axisCategory ? rowMax : 0
+        })
+      })()
+    }
   })
   chart.setOption({ series }, false, true)
   requestAnimationFrame(() => {
@@ -1705,8 +1719,8 @@ watch(
 
 watch(
   () => props.contextFilters,
-  (next, prev) => {
-    clearLocalSelectionsForChangedContext(next, prev)
+  (next) => {
+    applyDefaultSelectionsFromContext(next)
     rebuildAndRender()
     emitAllFilters()
     emitExactSelection()
@@ -1736,8 +1750,9 @@ watch(
   () => props.clearRequest?.token,
   () => {
     const dimKey = props.clearRequest?.key
+    const value = props.clearRequest?.value
     if (!dimKey) return
-    removeSelectionForDim(dimKey)
+    removeSelectionValueForDim(dimKey, value)
   }
 )
 </script>
@@ -1887,6 +1902,13 @@ watch(
 
 .legend-swatch.risk {
   background: #ec8b2d;
+}
+
+.legend-swatch.marker {
+  width: 0;
+  height: 12px;
+  border-radius: 0;
+  border-left: 2px solid #7c3aed;
 }
 
 .guide-summary {
