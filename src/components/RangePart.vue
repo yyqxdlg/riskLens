@@ -149,10 +149,10 @@ const shortLabelMap = {
 }
 
 const INPUT_LIMITS = {
-  age: [18, 95],
-  bmi: [14.9, 68.9],
-  sbp: [80, 220],
-  chol: [100, 450]
+  age: [0, 130],      // 有记录的最长寿 122 岁
+  bmi: [10, 100],     // BMI 10 以下基本不存活，100 以上极罕见
+  sbp: [50, 300],     // 50 以下休克，300 以上极危重
+  chol: [50, 700]     // 50 以下极罕见遗传病，700 以上也属极端
 }
 const CATEGORY_WINDOWS = {
   ageGroup: {
