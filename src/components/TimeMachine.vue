@@ -66,7 +66,7 @@ const STANDARD_AGE_BINS = [
   { start: 45, end: 50, label: '45-50' }, { start: 50, end: 55, label: '50-55' },
   { start: 55, end: 60, label: '55-60' }, { start: 60, end: 65, label: '60-65' },
   { start: 65, end: 70, label: '65-70' }, { start: 70, end: 75, label: '70-75' },
-  { start: 75, end: 80, label: '75-80' }, { start: 80, end: 120, label: '80+' }
+  { start: 75, end: 80, label: '75-80' }, { start: 80, end: 140, label: '80+' }
 ];
 
 const closeModal = () => {
@@ -75,35 +75,73 @@ const closeModal = () => {
 };
 
 // 仿真模拟逻辑
-const runSimulation = (inputAge, currentFilters, allData) => {
-  const age = Number(inputAge);
-  const startIndex = STANDARD_AGE_BINS.findIndex(bin => age >= bin.start && age < bin.end);
-  if (startIndex === -1 || !allData.length) return [];
+// const runSimulation = (inputAge, currentFilters, allData) => {
+//   const age = Number(inputAge);
+//   const startIndex = STANDARD_AGE_BINS.findIndex(bin => age >= bin.start && age < bin.end);
+//   if (startIndex === -1 || !allData.length) return [];
 
-  const targetBins = STANDARD_AGE_BINS.slice(startIndex);
+//   const targetBins = STANDARD_AGE_BINS.slice(startIndex);
   
-  // 过滤出与用户当前生理特征一致的“同类人”
+//   // 过滤出与用户当前生理特征一致的“同类人”
+//   const peerGroup = allData.filter(item => {
+//     const check = (key) => {
+//       const fv = currentFilters[key];
+//       if (!fv || (Array.isArray(fv) && fv.length === 0)) return true;
+//       return Array.isArray(fv) ? fv.includes(item.displayGroups[key]) : item.displayGroups[key] === fv;
+//     };
+//     return check('bmiGroup') && check('bpGroup') && check('lipidGroup') && check('diabetesLabel');
+//   });
+
+//   const result = [];
+//   targetBins.forEach(bin => {
+//     const subset = peerGroup.filter(i => i.rawValues.age >= bin.start && i.rawValues.age < bin.end);
+//     if (subset.length > 0) {
+//       const cvd = subset.filter(i => i.rawValues.CVD === 1).length;
+//       const total = subset.length;
+//       result.push({ label: bin.label, cvd, healthy: total - cvd, rate: ((cvd / total) * 100).toFixed(1) });
+//     }
+//   });
+//   return result;
+// };
+const runSimulation = (inputAge, currentFilters, allData) => {
+  const age = Number(inputAge)
+  let startIndex = STANDARD_AGE_BINS.findIndex(bin => age >= bin.start && age < bin.end)
+
+  // age < 18 时，从第一个 bin(18-20) 开始展示所有柱子
+  const isBelowMinAge = startIndex === -1 && age < 18
+  if (isBelowMinAge) startIndex = 0
+
+  if (startIndex === -1 || !allData.length) return []
+
+  const targetBins = STANDARD_AGE_BINS.slice(startIndex)
+
   const peerGroup = allData.filter(item => {
     const check = (key) => {
-      const fv = currentFilters[key];
-      if (!fv || (Array.isArray(fv) && fv.length === 0)) return true;
-      return Array.isArray(fv) ? fv.includes(item.displayGroups[key]) : item.displayGroups[key] === fv;
-    };
-    return check('bmiGroup') && check('bpGroup') && check('lipidGroup') && check('diabetesLabel');
-  });
-
-  const result = [];
-  targetBins.forEach(bin => {
-    const subset = peerGroup.filter(i => i.rawValues.age >= bin.start && i.rawValues.age < bin.end);
-    if (subset.length > 0) {
-      const cvd = subset.filter(i => i.rawValues.CVD === 1).length;
-      const total = subset.length;
-      result.push({ label: bin.label, cvd, healthy: total - cvd, rate: ((cvd / total) * 100).toFixed(1) });
+      const fv = currentFilters[key]
+      if (!fv || (Array.isArray(fv) && fv.length === 0)) return true
+      return Array.isArray(fv) ? fv.includes(item.displayGroups[key]) : item.displayGroups[key] === fv
     }
-  });
-  return result;
-};
+    return check('bmiGroup') && check('bpGroup') && check('lipidGroup') && check('diabetesLabel')
+  })
 
+  const result = []
+
+  // age < 18 时，在最前面插入一个 0 风险的起始点
+  // if (isBelowMinAge) {
+  //   result.push({ label: `${age}`, cvd: 0, healthy: 0, rate: '0.0' })
+  // }
+
+  targetBins.forEach(bin => {
+    const subset = peerGroup.filter(i => i.rawValues.age >= bin.start && i.rawValues.age < bin.end)
+    if (subset.length > 0) {
+      const cvd = subset.filter(i => i.rawValues.CVD === 1).length
+      const total = subset.length
+      result.push({ label: bin.label, cvd, healthy: total - cvd, rate: ((cvd / total) * 100).toFixed(1) })
+    }
+  })
+
+  return result
+}
 const renderChart = (data) => {
   if (!timeMachine.value) return;
 

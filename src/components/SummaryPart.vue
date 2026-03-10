@@ -250,14 +250,14 @@ const initChart = () => {
   myChart.setOption(option);
 };
 watch(() => props.processObject, () => initChart(), { deep: true });
-
+const handleResize = () => myChart?.resize()
 onMounted(() => {
-  window.addEventListener('resize', () => myChart?.resize());
+  window.addEventListener('resize', () => handleResize());
   initChart();
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', () => myChart?.resize());
+  window.removeEventListener('resize', () => handleResize());
   myChart?.dispose();
 });
 // 1. 新增：计算背景组（全部数据）的统计
@@ -279,12 +279,12 @@ const backgroundPrevalence = computed(() => {
 });
 // 2. 新增：对比描述逻辑
 const prevalenceDiff = computed(() => {
-  const diff = (prevalenceRate.value - backgroundPrevalence.value).toFixed(2);
-  return {
-    val: Math.abs(diff),
-    isHigher: diff > 0,
-    isEqual: diff == 0
-  };
+  const diff = Number((prevalenceRate.value - backgroundPrevalence.value).toFixed(2))
+return {
+  val: Math.abs(diff),
+  isHigher: diff > 0,
+  isEqual: diff === 0
+}
 });
 </script>
 

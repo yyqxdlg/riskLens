@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
 const props = defineProps({
   activeFilters: {
@@ -61,6 +61,10 @@ const activeRows = computed(() =>
     }))
     .filter(row => row.values.length > 0)
 )
+
+onMounted(()=> {
+  emit('remove', {})
+})
 </script>
 
 <style scoped>
