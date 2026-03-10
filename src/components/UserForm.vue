@@ -126,10 +126,10 @@ const emptyFilters = () => ({
 const seededFilters = ref(emptyFilters())
 
 const RANGE_LIMITS = {
-  age: [18, 95],
-  bmi: [14.9, 68.9],
-  sbp: [80, 220],
-  chol: [100, 450]
+  age: [0, 130],      // 有记录的最长寿 122 岁
+  bmi: [10, 100],     // BMI 10 以下基本不存活，100 以上极罕见
+  sbp: [50, 300],     // 50 以下休克，300 以上极危重
+  chol: [50, 700]     // 50 以下极罕见遗传病，700 以上也属极端
 }
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
@@ -161,6 +161,8 @@ const classifyFilters = () => {
     else if (age < 60) next.ageGroup = ['Middle-Aged']
     else if (age < 75) next.ageGroup = ['Senior']
     else next.ageGroup = ['Elderly']
+  } else {
+    next.ageGroup = []
   }
 
   const bmiRaw = extractNumber(formState.value.bmi)
@@ -171,6 +173,8 @@ const classifyFilters = () => {
     else if (bmi < 30) next.bmiGroup = ['Overweight']
     else if (bmi < 35) next.bmiGroup = ['Obese I']
     else next.bmiGroup = ['Severe Obesity']
+  } else {
+    next.bmiGroup = []
   }
 
   const sbpRaw = extractNumber(formState.value.sbp)
@@ -182,6 +186,8 @@ const classifyFilters = () => {
     else if (sbp < 140) next.bpGroup = ['Stage 1']
     else if (sbp < 180) next.bpGroup = ['Stage 2']
     else next.bpGroup = ['Crisis']
+  } else {
+    next.bpGroup = []
   }
 
   const cholRaw = extractNumber(formState.value.chol)
@@ -191,20 +197,17 @@ const classifyFilters = () => {
     else if (chol < 240) next.lipidGroup = ['Borderline']
     else if (chol < 400) next.lipidGroup = ['High']
     else next.lipidGroup = ['Extreme']
+  } else {
+    next.lipidGroup = []
   }
 
-  // const diabetesSelections = [...new Set(formState.value.diabetesSelections || [])]
-  //   .filter(v => v === 'Non-Diabetic' || v === 'Diabetic')
-  // if (diabetesSelections.length === 1) {
-  //   next.diabetesLabel = diabetesSelections
-  // }
   const diabetesRaw = formState.value.diabetesSelections
   next.diabetesLabel = !diabetesRaw
-    ? (seededFilters.value.diabetesLabel || [])
+    ? []                        // ← 改这里：清空时不再保留 seeded 值
     : diabetesRaw === 'Non-Diabetic'
       ? ['Non-Diabetic']
       : ['Diabetic']
-  // console.log(diabetesRaw,next,'next')
+
   return next
 }
 
@@ -227,16 +230,16 @@ const buildUserInputs = () => {
   }
 }
 const openTimeMachine = () => {
-  if(!extractNumber(formState.value.age) ){
-    message.error({
-    content: 'Age can not be empty',
-    duration: 3, // 停止 3 秒后消失
-  });
-  }else{
-    handleConfirm()
-    emit('openTimeMachine')
+  const age = extractNumber(formState.value.age)
+  if (!age) {
+    message.error({ content: 'Age can not be empty', duration: 3 })
+    return
   }
-  
+  if (age < 18) {
+    message.warning({ content: 'Age below 18 has no data in the dataset, Time Machine will show no results', duration: 3 })
+  }
+  handleConfirm()
+  emit('openTimeMachine', age)  // 直接传原始值
 }
 
 const emitCurrentState = () => {

@@ -296,7 +296,10 @@ const finishBusy = () => {
 const getLiveRangeFilters = () => {
   const result = createFilterMap()
   allDimensions.forEach(dim => {
-    result[dim.key] = normalizeSelection(dim.key, selectedByDim.value[dim.key] || [])
+    if (userInteractedDims.value.has(dim.key)) {
+      result[dim.key] = normalizeSelection(dim.key, selectedByDim.value[dim.key] || [])
+    }
+    // 未交互的 dim 默认返回 []，由 formFilters 接管
   })
   return result
 }
@@ -577,6 +580,8 @@ const emitExactSelection = () => {
 }
 
 const removeSelectionForDim = (dimKey) => {
+  // 从用户接管集合中移除，让该 dim 重新受 context 控制
+  userInteractedDims.value = new Set([...userInteractedDims.value].filter(d => d !== dimKey)) // ← 新增
   setMapValue(selectedByDim, dimKey, [])
   setMapValue(selectedBarIdsByDim, dimKey, [])
   rebuildAndRender()
@@ -615,19 +620,20 @@ const removeSelectionValueForDim = (dimKey, value) => {
   emitExactSelection()
 }
 
+// 4. applyDefaultSelectionsFromContext：跳过用户已交互的 dim
 const applyDefaultSelectionsFromContext = (nextContext = {}) => {
   let changed = false
   const nextSelected = { ...selectedByDim.value }
   const nextBarIds = { ...selectedBarIdsByDim.value }
 
   chartDimensions.forEach((dim) => {
+    if (userInteractedDims.value.has(dim.key)) return // ← 新增：用户已接管，不覆盖
+
     const allCats = baseCategoriesByDim.value[dim.key] || []
     const incomingValues = dedupe(nextContext?.[dim.key] || []).filter(v => allCats.includes(v))
     const currentSelected = normalizeSelection(dim.key, nextSelected[dim.key] || [])
     const currentBarIds = nextBarIds[dim.key] || []
 
-    // Confirm always controls default subgroup selections:
-    // with value => select that group; without value => clear group (all included).
     if (!sameArray(currentSelected, incomingValues)) {
       nextSelected[dim.key] = incomingValues
       changed = true
@@ -639,7 +645,6 @@ const applyDefaultSelectionsFromContext = (nextContext = {}) => {
   })
 
   if (!changed) return
-
   selectedByDim.value = nextSelected
   selectedBarIdsByDim.value = nextBarIds
 }
@@ -882,6 +887,7 @@ const clearAllSelections = () => {
       ]))
     }, false, true)
   }
+  userInteractedDims.value = new Set()
 }
 
 const makeSeriesId = (dimKey, metric) => `${dimKey}__${metric}`
@@ -1612,20 +1618,22 @@ const setViewMode = (mode) => {
   renderChart()
 }
 
+// ✅ 正确写法
 const toggleCategorySelection = (dimKey, category) => {
+  // 直接读当前值，context 预设的 Young Adult 还在里面
   const current = [...normalizeSelection(dimKey, selectedByDim.value[dimKey] || [])]
-  const idx = current.indexOf(category)
+  
+  userInteractedDims.value = new Set([...userInteractedDims.value, dimKey])
 
+  const idx = current.indexOf(category)
   if (idx >= 0) {
     current.splice(idx, 1)
   } else {
     current.push(category)
   }
-
   const normalized = normalizeSelection(dimKey, current)
   setMapValue(selectedByDim, dimKey, normalized)
   setMapValue(selectedBarIdsByDim, dimKey, [])
-
   rebuildAndRender()
   emitAllFilters()
   emitExactSelection()
@@ -1717,9 +1725,22 @@ watch(
   { deep: true }
 )
 
+// RangePart.vue
 watch(
   () => props.contextFilters,
   (next) => {
+    // form 有值的 dim → form 重新接管，清除用户交互标记
+    // form 为空的 dim → 说明是 chart 接管后 form 被清空的，保留用户交互标记
+    const newInteracted = new Set(userInteractedDims.value)
+    chartDimensions.forEach(dim => {
+      const incoming = next?.[dim.key] || []
+      if (incoming.length > 0) {
+        newInteracted.delete(dim.key)  // form 有值，form 接管
+      }
+      // incoming 为空 → chart 正在控制这个 dim，不动
+    })
+    userInteractedDims.value = newInteracted
+
     applyDefaultSelectionsFromContext(next)
     rebuildAndRender()
     emitAllFilters()
@@ -1755,6 +1776,9 @@ watch(
     removeSelectionValueForDim(dimKey, value)
   }
 )
+
+//new 
+const userInteractedDims = ref(new Set())
 </script>
 
 <style scoped>

@@ -68,7 +68,7 @@ const steps = [
     help: 'If unknown, skip this step.',
     inputLabel: 'Exact age',
     placeholder: 'e.g. 39',
-    range: [18, 95]
+    range: [0, 130]
   },
   {
     key: 'bmi',
@@ -78,7 +78,7 @@ const steps = [
     help: 'If unknown, skip this step.',
     inputLabel: 'Exact BMI',
     placeholder: 'e.g. 23.4',
-    range: [14.9, 68.9]
+    range: [10, 100]
   },
   {
     key: 'sbp',
@@ -88,7 +88,7 @@ const steps = [
     help: 'If unknown, skip this step.',
     inputLabel: 'Exact SBP',
     placeholder: 'e.g. 128',
-    range: [80, 220]
+    range:[50, 300]
   },
   {
     key: 'chol',
@@ -98,7 +98,7 @@ const steps = [
     help: 'If unknown, skip this step.',
     inputLabel: 'Exact CHOL',
     placeholder: 'e.g. 210',
-    range: [100, 450]
+    range:  [50, 700] 
   },
   {
     key: 'diabetes',

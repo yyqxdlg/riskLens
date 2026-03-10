@@ -192,9 +192,25 @@ import TeamPage from './components/TeamPage.vue';
   };
 
   const onRangeFiltersUpdate = (val) => {
-    rangeFilters.value = { ...rangeFilters.value, ...val };
-    rebuildActiveFilters();
-  };
+    const nextRange = { ...rangeFilters.value, ...val }
+    const nextForm = { ...formFilters.value }
+
+    // ← 新增：chart 主动选了某 dim，form 不再干预该 dim
+    Object.keys(val).forEach(key => {
+      if ((val[key] || []).length > 0) {
+        nextForm[key] = []
+      }
+    })
+
+    rangeFilters.value = nextRange
+    // 只在真正有变化时赋值，避免不必要的 contextFilters watch 触发
+    const formChanged = Object.keys(nextForm).some(
+      k => JSON.stringify(nextForm[k]) !== JSON.stringify(formFilters.value[k])
+    )
+    if (formChanged) formFilters.value = nextForm
+
+    rebuildActiveFilters()
+  }
 
   const onRangeSelectionUpdate = (rowIds) => {
     rangeSelectedRowIds.value = Array.isArray(rowIds) ? rowIds : null;
@@ -239,7 +255,7 @@ import TeamPage from './components/TeamPage.vue';
     rebuildActiveFilters()
     clearFilterRequest.value = {
       token: clearFilterRequest.value.token + 1,
-      key
+      key,value
     }
   }
 
@@ -300,9 +316,9 @@ import TeamPage from './components/TeamPage.vue';
     return result
     
   }
-  watch(() => activeFilters.value, () => {
-    processArray.value = processData();
-  }, { deep: true })
+  // watch(() => activeFilters.value, () => {
+  //   processArray.value = processData();
+  // }, { deep: true })
 
   const open = ref(false)
   const modalState = ref({
@@ -323,33 +339,33 @@ import TeamPage from './components/TeamPage.vue';
     return 50
   }
 
-  const showOlderModal = () => {
-    modalState.value = {
-      open: true,
-      userAge: getPreferredUserAge(),
-      otherInfo: { ...activeFilters.value }
-
-    }
-    open.value = true
+const showOlderModal = (age) => {
+  modalState.value = {
+    open: true,
+    userAge: Number.isFinite(age) ? Math.round(age) : getPreferredUserAge(),
+    otherInfo: { ...activeFilters.value }
   }
+  open.value = true
+}
   const colseTimeModal = () => {
     open.value = false
     
   }
 
   watch(
-    () => [userInputs.value.age, activeFilters.value],
-    () => {
-      if (!open.value) return
-      modalState.value = {
-        ...modalState.value,
-        open: true,
-        userAge: getPreferredUserAge(),
-        otherInfo: { ...activeFilters.value }
-      }
-    },
-    { deep: true }
-  )
+  () => activeFilters.value,     // ← 只 watch activeFilters，去掉 userInputs.value.age
+  () => {
+    processArray.value = processData();
+    if (!open.value) return
+    modalState.value = {
+      ...modalState.value,
+      open: true,
+      // userAge 不更新 ← modal 打开后 age 保持用户点击时传入的值
+      otherInfo: { ...activeFilters.value }
+    }
+  },
+  { deep: true }
+)
   onMounted(() => {
     
     rawGroupData.value = groupData
