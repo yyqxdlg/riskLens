@@ -19,6 +19,16 @@
               size="large"
               class="inline-control"
             />
+            <!-- BMI calculator icon button — only on the BMI field -->
+            <a-tooltip v-if="field.key === 'bmi'" title="Calculate BMI from height &amp; weight">
+              <span
+                class="bmi-icon-btn"
+                size="small"
+                @click="bmiModalOpen = true"
+              >
+                🧮
+            </span>
+            </a-tooltip>
             <a-tooltip :title="field.description" color="#108ee9">
               <InfoCircleTwoTone class="inline-tip" />
             </a-tooltip>
@@ -56,13 +66,19 @@
       </div>
     </a-form>
   </div>
+  <!-- BMI Calculator Modal -->
+  <BmiCalculatorModal
+    :open="bmiModalOpen"
+    @confirm="onBmiConfirm"
+    @cancel="bmiModalOpen = false"
+  />
 </template>
 
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { message } from 'ant-design-vue';
 import {InfoCircleTwoTone}  from '@ant-design/icons-vue';
-
+import BmiCalculatorModal from './BmiCalculatorModal.vue'
 
 const props = defineProps({
   clearSignal: {
@@ -92,7 +108,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['updateFilters', 'updateUserInputs', 'openTimeMachine'])
+const bmiModalOpen = ref(false)
 
+const onBmiConfirm = (value) => {
+  formState.value.bmi = value
+  bmiModalOpen.value = false
+}
 const numericFields = [
   { key: 'age', label: 'Age',description:'Your current age, which acts as a primary independent risk factor for cardiovascular health.' },
   { key: 'bmi', label: 'BMI',description: 'A measure of body composition that helps identify if your weight is in a healthy proportion to your height.' },
@@ -493,4 +514,26 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 }
+/* BMI calculator icon button */
+.bmi-icon-btn {
+  flex-shrink: 0;
+  border-radius: 7px;
+  border-color: #bae6fd;
+  background: #f0f9ff;
+  color: #0369a1;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.bmi-icon-btn:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
 </style>

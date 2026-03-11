@@ -33,6 +33,14 @@
               size="large"
               @pressEnter="handleAdvance"
             />
+            <!-- BMI Calculator trigger — only shown on the BMI step -->
+              <a-button
+                v-if="currentStep.key === 'bmi'"
+                class="bmi-calc-btn"
+                @click="bmiModalOpen = true"
+              >
+                🧮 Calculate BMI
+              </a-button>
           </div>
         </div>
       </div>
@@ -52,13 +60,24 @@
       </div>
     </div>
   </section>
+  <BmiCalculatorModal
+    :open="bmiModalOpen"
+    @confirm="onBmiConfirm"
+    @cancel="bmiModalOpen = false"
+  />
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import BmiCalculatorModal from './BmiCalculatorModal.vue'
 
 const emit = defineEmits(['complete'])
+const bmiModalOpen = ref(false)
 
+const onBmiConfirm = (value) => {
+  draftValue.value = value
+  bmiModalOpen.value = false
+}
 const steps = [
   {
     key: 'age',
