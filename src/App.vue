@@ -30,15 +30,51 @@
           </div>
         </section>
         <div v-else class="page-shell">
-          <section class="panel-card form-card">
-            <UserForm
-              :clearSignal="formClearSignal"
-              :initialFilters="formFilters"
-              :initialValues="userInputs"
-              @updateFilters="onFormFiltersUpdate"
-              @updateUserInputs="onUserInputsUpdate"
-              @openTimeMachine="showOlderModal"
-            />
+          <section class="topOverviewRow">
+            <section class="panel-card form-card">
+              <div class="form-card-header">
+                <img :src="logoSrc" alt="RiskLens" class="form-card-logo">
+              </div>
+              <UserForm
+                :clearSignal="formClearSignal"
+                :initialFilters="formFilters"
+                :initialValues="userInputs"
+                @updateFilters="onFormFiltersUpdate"
+                @updateUserInputs="onUserInputsUpdate"
+                @openTimeMachine="showOlderModal"
+              />
+            </section>
+            <section class="panel-card userScoreCard">
+              <div class="guidance-section">
+                <div class="header-row">
+                  <span class="pulse-icon"></span>
+                  <h3 class="section-title">Clinical Profile Analysis</h3>
+                </div>
+                <div class="analysis-box">
+                  <div class="dynamic-narrative" :class="riskStatus.class">
+                    <div :class="{ 'score-circle': true, 'score-circle-healthy': totalRiskScore > 0, 'score-circle-risk': totalRiskScore < 0, 'score-circle-moderate': totalRiskScore == 0 && hasFilter }">{{ totalRiskScore > 0 ? '+' : '' }}{{ totalRiskScore }}</div>
+                    <div class="analysis-text">
+                      <h4 style="margin:0">
+                        {{ riskStatus.label }} (Total Score: {{ totalRiskScore }})
+                      </h4>
+                      <p class="risk-advice">{{ riskStatus.message }}</p>
+                      <div v-if="priorityRisks.length > 0" class="action-hint">
+                        You should focus on: <span class="highlight">{{ priorityRisks.join(', ') }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="status-badge-grid">
+                    <div v-for="m in badgeData" :key="m.key" class="status-badge" :class="m.level">
+                      <span class="badge-label">{{ m.label }}</span>
+                      <span class="badge-category">{{ m.category }}</span>
+                      <div v-if="!m.isMissing" class="point-tag" :class="m.score > 0 ? 'pos' : (m.score == 0 ? 'pos': 'neg')">
+                        {{ m.score > 0 ? '+' : '' }}{{ m.score }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
           </section>
           <section class="panel-card topFilterRow">
             <div class="topFilterContent">
@@ -48,46 +84,43 @@
               <a-button class="clearAllBtn" @click="clearAllFilters">Clear All Filters</a-button>
             </div>
           </section>
-          <div class="mainChartsRow">
-            <section class="panel-card rangePart">
-              <RangePart
-                :rawGroupData="rawGroupData"
-                :contextFilters="formFilters"
-                :userInputs="userInputs"
-                :clearSignal="rangeClearSignal"
-                :clearRequest="clearFilterRequest"
-                @updateFilters="onRangeFiltersUpdate"
-                @updateSelection="onRangeSelectionUpdate"
-              />
-            </section>
-
-            
-          </div>
+          <section class="panel-card rangePart">
+            <RangePart
+              :rawGroupData="rawGroupData"
+              :contextFilters="formFilters"
+              :userInputs="userInputs"
+              :clearSignal="rangeClearSignal"
+              :clearRequest="clearFilterRequest"
+              @updateFilters="onRangeFiltersUpdate"
+              @updateSelection="onRangeSelectionUpdate"
+            />
+          </section>
           <section class="panel-card rightPart">
-              <div class="dynamic-narrative" style="margin: 24px;">
-                <p v-if="totalSelected > 0">
-                  Based on the filters, You have isolated a subgroup of <strong>{{ totalSelected.toLocaleString() }}</strong> individuals. 
-                  consisting of <strong class="red">{{ selectedCVDCount.toLocaleString() }}</strong> CVD cases 
-                  and <strong class="blue">{{ selectedHealthyCount.toLocaleString() }}</strong> healthy peers.
-                </p>
-                <p v-else>
-                  No matching peers found for these criteria. Please adjust your sliders or categories for peer-group analysis.
-                </p>
+            <div class="selection-narrative">
+              <h2 class="selection-title">Subgroup Snapshot</h2>
+              <p v-if="totalSelected > 0">
+                Based on the filters, You have isolated a subgroup of <strong>{{ totalSelected.toLocaleString() }}</strong> individuals.
+                consisting of <strong class="red">{{ selectedCVDCount.toLocaleString() }}</strong> CVD cases
+                and <strong class="blue">{{ selectedHealthyCount.toLocaleString() }}</strong> healthy peers.
+              </p>
+              <p v-else>
+                No matching peers found for these criteria. Please adjust your sliders or categories for peer-group analysis.
+              </p>
+            </div>
+            <div class="twoContainer">
+              <div class="radarPart">
+                <RadarPart
+                  :processObject="processArray"
+                  :userInputs="userInputs"
+                  :activeFilters="activeFilters"
+                ></RadarPart>
               </div>
-              <div class="twoContainer">
-                <div class="radarPart">
-                  <RadarPart
-                    :processObject="processArray"
-                    :userInputs="userInputs"
-                    :activeFilters="activeFilters"
-                  ></RadarPart>
-                </div>
-                <div class="summaryPart">
-                  <SummaryPart :processObject="processArray" ></SummaryPart>
-                </div>
+              <div class="summaryPart">
+                <SummaryPart :processObject="processArray" ></SummaryPart>
               </div>
-            </section>
-          <TimeMachine v-if="open" :rawGroupData="rawGroupData" :modalState="modalState"  @colseTimeModal="colseTimeModal"></TimeMachine>
+            </div>
+          </section>
+          <TimeMachine v-if="open" :rawGroupData="rawGroupData" :modalState="modalState" @colseTimeModal="colseTimeModal"></TimeMachine>
         </div>
       </a-tab-pane>
       <a-tab-pane key="2">
@@ -129,6 +162,7 @@ import groupData from '@/assets/riskless_data_all_years.json';
 import TimeMachine from './components/TimeMachine.vue';
 import AboutPage from './components/AboutPage.vue';
 import TeamPage from './components/TeamPage.vue';
+import logoSrc from '@/assets/risklenslogo-header.png';
 
 
   const rawGroupData = ref([])
@@ -373,7 +407,219 @@ const showOlderModal = (age) => {
     rebuildActiveFilters();
     processArray.value = processData();
    })
-  
+
+const scoreMetrics = [
+  { key: 'age', name: 'Age', max: 85 },
+  { key: 'bmi', name: 'BMI', max: 70 },
+  { key: 'bp', name: 'SBP', max: 220 },
+  { key: 'lipids', name: 'Chol', max: 450 },
+  { key: 'diabetes', name: 'Diabetes', max: 1 }
+]
+
+const detailedScores = computed(() => {
+  const ui = userInputs.value || {}
+
+  return scoreMetrics.map(metric => {
+    const rawVal = ui[metric.key === 'lipids' ? 'chol' : (metric.key === 'bp' ? 'sbp' : metric.key)]
+    const hasInput = metric.key === 'diabetes'
+      ? (ui.diabetes && ui.diabetes.length > 0)
+      : (rawVal !== undefined && rawVal !== null && rawVal !== '')
+
+    if (!hasInput) {
+      return {
+        ...metric,
+        score: 0,
+        category: 'Pending',
+        level: 'none',
+        reason: 'No input',
+        value: null,
+        isMissing: true
+      }
+    }
+
+    const val = metric.key === 'diabetes' ? (ui.diabetes.includes('Diabetic') ? 1 : 0) : Number(rawVal)
+    let score = 0
+    let category = ''
+    let level = ''
+    let reason = ''
+
+    switch (metric.key) {
+      case 'age':
+        if (val < 40) {
+          score = 1
+          category = 'Young Adult'
+          level = 'normal'
+          reason = 'Healthy Stage (+1)'
+        } else if (val < 60) {
+          score = 0
+          category = 'Middle-Aged'
+          level = 'normal'
+          reason = 'Screening Window (0)'
+        } else {
+          score = 0
+          category = val < 75 ? 'Senior' : 'Elderly'
+          level = 'normal'
+          reason = 'Standard risk (0)'
+        }
+        break
+      case 'bmi':
+        if (val >= 18.5 && val < 25) {
+          score = 1
+          category = 'Healthy'
+          level = 'normal'
+          reason = 'Healthy BMI (+1)'
+        } else if (val < 18.5 || val < 30) {
+          score = -1
+          category = val < 18.5 ? 'Underweight' : 'Overweight'
+          level = 'warning'
+          reason = 'Deviated (-1)'
+        } else if (val < 35) {
+          score = -2
+          category = 'Obese I'
+          level = 'danger'
+          reason = 'Obesity Class I (-2)'
+        } else {
+          score = -3
+          category = 'Severe Obesity'
+          level = 'danger'
+          reason = 'Significant Risk (-3)'
+        }
+        break
+      case 'bp':
+        if (val < 120) {
+          score = 1
+          category = 'Normal'
+          level = 'normal'
+          reason = 'Normal (+1)'
+        } else if (val < 130) {
+          score = -1
+          category = 'Elevated'
+          level = 'warning'
+          reason = 'Elevated (-1)'
+        } else if (val < 180) {
+          score = -2
+          category = val < 140 ? 'Stage 1' : 'Stage 2'
+          level = 'danger'
+          reason = 'Hypertension (-2)'
+        } else {
+          score = -3
+          category = 'Crisis'
+          level = 'danger'
+          reason = 'Crisis (-3)'
+        }
+        break
+      case 'lipids':
+        if (val < 200) {
+          score = 1
+          category = 'Desirable'
+          level = 'normal'
+          reason = 'Optimal (+1)'
+        } else if (val < 240) {
+          score = -1
+          category = 'Borderline'
+          level = 'warning'
+          reason = 'Borderline (-1)'
+        } else if (val < 400) {
+          score = -2
+          category = 'High'
+          level = 'danger'
+          reason = 'High Chol (-2)'
+        } else {
+          score = -3
+          category = 'Extreme'
+          level = 'danger'
+          reason = 'Extreme Risk (-3)'
+        }
+        break
+      case 'diabetes':
+        if (val === 0) {
+          score = 1
+          category = 'Non-Diabetic'
+          level = 'normal'
+          reason = 'Healthy (+1)'
+        } else {
+          score = -3
+          category = 'Diabetic'
+          level = 'danger'
+          reason = 'Major Risk (-3)'
+        }
+        break
+      default:
+        break
+    }
+
+    return { ...metric, score, category, level, reason, value: val, isMissing: false }
+  })
+})
+
+const hasFilter = computed(() => detailedScores.value.filter(score => !score.isMissing).length)
+
+const totalRiskScore = computed(() => detailedScores.value.reduce((acc, curr) => acc + curr.score, 0))
+
+const riskStatus = computed(() => {
+  const activeCount = detailedScores.value.filter(score => !score.isMissing).length
+
+  if (activeCount === 0) {
+    return {
+      label: 'AWAITING DATA',
+      class: 'none-border',
+      message: 'Please input clinical data to analyze your risk profile.'
+    }
+  }
+
+  if (totalRiskScore.value > 0) {
+    return {
+      label: 'LOW RISK',
+      class: 'healthy-border',
+      message: 'You are currently in a low risk category. Your clinical metrics align well with healthy benchmarks.'
+    }
+  }
+
+  if (totalRiskScore.value === 0) {
+    return {
+      label: 'MODERATE RISK',
+      class: 'warning-border',
+      message: 'You are currently in a middle risk category. Some deviations from standard clinical ranges have been detected.'
+    }
+  }
+
+  return {
+    label: 'HIGH RISK',
+    class: 'risk-border',
+    message: 'You are currently in a high risk category. Significant deviations across multiple metrics require clinical attention.'
+  }
+})
+
+const priorityRisks = computed(() => detailedScores.value
+  .filter(score => !score.isMissing && score.score < 0)
+  .sort((left, right) => left.score - right.score)
+  .map(score => score.name)
+)
+
+const badgeData = computed(() => {
+  const uiMapping = [
+    { key: 'age', label: 'Age' },
+    { key: 'bmi', label: 'BMI' },
+    { key: 'bp', label: 'SBP' },
+    { key: 'lipids', label: 'CHOL' },
+    { key: 'diabetes', label: 'Diabetes' }
+  ]
+
+  return uiMapping.map(metric => {
+    const scoreDetail = detailedScores.value.find(item => item.key === metric.key) || {}
+
+    return {
+      key: metric.key,
+      label: metric.label,
+      score: scoreDetail.score || 0,
+      category: scoreDetail.category || '--',
+      level: scoreDetail.level || 'none',
+      isMissing: scoreDetail.isMissing ?? true,
+      value: scoreDetail.value
+    }
+  })
+})
+
 //后续修改
 const totalSelected = computed(() => selectedCVDCount.value + selectedHealthyCount.value);
 const selectedCVDCount = computed(() => {
@@ -392,10 +638,7 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
   -moz-osx-font-smoothing: grayscale;
   color: #1f3b53;
   min-height: 100vh;
-  background:
-    radial-gradient(120% 70% at 10% -10%, rgba(59, 130, 246, 0.13), transparent 60%),
-    radial-gradient(110% 70% at 95% 0%, rgba(20, 184, 166, 0.09), transparent 60%),
-    linear-gradient(180deg, #f4f9ff 0%, #f8fbff 36%, #f5f8fc 100%);
+  background: #f8fafc;
 }
 
 :deep(.ant-tabs-nav) {
@@ -517,7 +760,286 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 }
 
 .form-card {
-  padding: 10px 12px 8px;
+  padding: 18px 20px 16px;
+}
+
+.form-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 28px;
+  min-height: 50px;
+}
+
+.form-card-logo {
+  width: 162px;
+  max-width: 46%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  filter: none;
+}
+
+.form-card :deep(.compact-grid) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.form-card :deep(.field-inline) {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  min-width: 0;
+}
+
+.form-card :deep(.inline-label) {
+  width: 100%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.form-card :deep(.inline-control-wrap) {
+  min-width: 0;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.form-card :deep(.inline-control) {
+  width: 100%;
+  max-width: 280px;
+}
+
+.form-card :deep(.intake-form) {
+  gap: 14px;
+}
+
+.form-card :deep(.action-row) {
+  padding-top: 14px;
+}
+
+.form-card :deep(.action-group) {
+  gap: 14px;
+}
+
+.topOverviewRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.32fr) minmax(360px, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.topOverviewRow > .panel-card {
+  height: 100%;
+}
+
+.userScoreCard {
+  padding: 18px 20px 16px;
+  overflow: hidden;
+}
+
+.guidance-section {
+  padding: 0;
+  background: transparent;
+  border-bottom: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.pulse-icon {
+  width: 10px;
+  height: 10px;
+  background: #722ed1;
+  border-radius: 50%;
+  margin-right: 10px;
+  box-shadow: 0 0 0 rgba(114, 46, 209, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 14px;
+  color: #4f05b7;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.dynamic-narrative {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #475569;
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 3px solid #722ed1;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border-left: 6px solid #e2e8f0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 110px;
+}
+
+.analysis-text h4 {
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.risk-advice {
+  font-size: 12px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.score-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #722ed1;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  margin-right: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(114, 46, 209, 0.3);
+  font-size: 18px;
+}
+
+.score-circle-healthy {
+  background-color: #52c41a !important;
+}
+
+.score-circle-risk {
+  background-color: #ff4d4f !important;
+}
+
+.score-circle-moderate {
+  background-color: #faad14 !important;
+}
+
+.action-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.highlight {
+  text-decoration: underline;
+  color: inherit;
+}
+
+.healthy-border {
+  border-left-color: #52c41a !important;
+  background: #f6ffed !important;
+  color: #389e0d !important;
+}
+
+.warning-border {
+  border-left-color: #faad14 !important;
+  background: #fffbe6 !important;
+  color: #d48806 !important;
+}
+
+.risk-border {
+  border-left-color: #ff4d4f !important;
+  background: #fff1f0 !important;
+  color: #cf1322 !important;
+}
+
+.none-border {
+  border-left-color: #cbd5e1 !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+}
+
+.status-badge-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.status-badge {
+  padding: 6px;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #eee;
+  transition: all 0.3s ease;
+  position: relative;
+  height: 65px;
+}
+
+.status-badge:hover {
+  transform: translateY(-2px);
+}
+
+.badge-label {
+  display: block;
+  font-size: 10px;
+  color: #8c8c8c;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.badge-category {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.point-tag {
+  position: absolute;
+  top: -8px;
+  right: -5px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pos {
+  background: #52c41a;
+}
+
+.neg {
+  background: #ff4d4f;
+}
+
+.normal {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+  color: #389e0d;
+}
+
+.warning {
+  background: #fffbe6;
+  border-color: #ffe58f;
+  color: #d48806;
+}
+
+.danger {
+  background: #fff1f0;
+  border-color: #ffa39e;
+  color: #cf1322;
+}
+
+.none {
+  background: #fafafa;
+  color: #bfbfbf;
 }
 
 .topFilterRow {
@@ -552,22 +1074,38 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
   background: #f0f7ff;
 }
 
-.mainChartsRow {
-  display: block;
-  width: 100%;
-  min-height: 440px;
-}
-
 .rangePart {
   width: 100%;
-  height: 440px;
-  min-height: 440px;
+  height: 560px;
+  min-height: 560px;
   padding: 8px 8px 6px;
 }
 
 .rightPart {
   min-height: 440px;
   padding: 8px;
+}
+
+.selection-narrative {
+  margin: 14px 14px 12px;
+  padding: 2px 2px 4px;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.selection-title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #0f3b87;
+}
+
+.selection-narrative p {
+  margin: 0;
 }
 
 .twoContainer {
@@ -592,11 +1130,19 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 }
 
 @media (max-width: 1260px) {
-  .mainChartsRow {
+  .topOverviewRow {
     grid-template-columns: 1fr;
   }
 
-  .rangePart,
+  .status-badge-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .rangePart {
+    height: 540px;
+    min-height: 540px;
+  }
+
   .rightPart {
     height: 440px;
     min-height: 440px;
@@ -604,6 +1150,41 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 }
 
 @media (max-width: 900px) {
+  .selection-title {
+    font-size: 20px;
+  }
+
+  .rangePart {
+    height: 500px;
+    min-height: 500px;
+  }
+
+  .form-card {
+    padding: 16px 16px 14px;
+  }
+
+  .form-card-logo {
+    width: 154px;
+    max-width: 58%;
+  }
+
+  .form-card-header {
+    margin-bottom: 20px;
+  }
+
+  .form-card :deep(.compact-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 18px;
+  }
+
+  .form-card :deep(.field-inline) {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+
+  .form-card :deep(.inline-control) {
+    max-width: none;
+  }
+
   .topFilterRow {
     flex-direction: column;
     align-items: stretch;
@@ -611,6 +1192,10 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 
   .topActions {
     justify-content: flex-end;
+  }
+
+  .status-badge-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .twoContainer {
@@ -621,11 +1206,43 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
   .radarPart,
   .summaryPart {
     width: 100%;
-    height: 50%;
+    height: 560px;
   }
 
   .onboarding-loading-card {
     padding: 32px 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .selection-title {
+    font-size: 18px;
+  }
+
+  .form-card {
+    padding: 14px 12px 12px;
+  }
+
+  .form-card-logo {
+    width: 132px;
+    max-width: 72%;
+  }
+
+  .form-card-header {
+    margin-bottom: 16px;
+  }
+
+  .form-card :deep(.compact-grid) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .form-card :deep(.field-inline) {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .status-badge-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -639,6 +1256,12 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 @keyframes dotPulse {
   0%, 100% { opacity: 0.35; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(-3px); }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(114, 46, 209, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(114, 46, 209, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(114, 46, 209, 0); }
 }
 .red { color: #cf1322; }
 .blue { color: #096dd9; }

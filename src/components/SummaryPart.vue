@@ -5,6 +5,7 @@
         <span class="pulse-icon"></span>
         <h3 class="section-title">Live Analysis Guidance</h3>
       </div>
+      <p class="section-subtitle">Compare subgroup composition with the cohort baseline to identify risk concentration shifts.</p>
 
       <div class="analysis-box">
     
@@ -57,10 +58,12 @@
       </div>
     </div>
 
-    <div ref="donutChartRef" class="chart-canvas"></div>
+    <div class="chart-block">
+      <div ref="donutChartRef" class="chart-canvas"></div>
+    </div>
     
     <div class="chart-legend-hint">
-      <small>* Top Bar: Selected Subgroup | Bottom Bar: Total Background Population</small>
+      <small>* Labels show count and within-row percentage.</small>
     </div>
   </div>
 </template>
@@ -84,10 +87,26 @@ const props = defineProps({
 
 const donutChartRef = ref(null);
 let myChart = null;
+let resizeObserver = null;
+const selectedCvdColor = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+  { offset: 0, color: '#ff6b6f' },
+  { offset: 1, color: '#ff3d43' }
+]);
+const backgroundCvdColor = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+  { offset: 0, color: 'rgba(255, 125, 128, 0.48)' },
+  { offset: 1, color: 'rgba(255, 77, 79, 0.32)' }
+]);
+const selectedHealthyColor = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+  { offset: 0, color: '#389cff' },
+  { offset: 1, color: '#177ddc' }
+]);
+const backgroundHealthyColor = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+  { offset: 0, color: 'rgba(84, 156, 235, 0.48)' },
+  { offset: 1, color: 'rgba(24, 144, 255, 0.32)' }
+]);
 
 // Computed Statistics
 const selectedCVDCount = computed(() => {
-  console.log(props, 'props')
   return props.processObject ? (props.processObject?.selectedCVD || []).length : 0  
   }
 ) ;
@@ -98,6 +117,15 @@ const prevalenceRate = computed(() => {
     ? ((selectedCVDCount.value / totalSelected.value) * 100).toFixed(2) 
     : 0;
 });
+
+const formatSegmentLabel = (params, compactThreshold = 10) => {
+  const ratio = Number(params.value) || 0;
+  const raw = Number(params.data?.raw || 0);
+  const ratioText = `${ratio.toFixed(1)}%`;
+  const rawText = raw.toLocaleString();
+  if (ratio < compactThreshold) return `${rawText} (${ratioText})`;
+  return `${rawText}\n(${ratioText})`;
+}
 
 // const initChart = () => {
 //   if (!donutChartRef.value) return;
@@ -170,9 +198,17 @@ const initChart = () => {
   const getP = (val, total) => total > 0 ? (val / total) * 100 : 0;
 
   const option = {
+    animationDurationUpdate: 380,
+    animationEasingUpdate: 'cubicOut',
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      borderColor: '#dbeafe',
+      borderWidth: 1,
+      textStyle: {
+        color: '#1f2937'
+      },
       formatter: (params) => {
         let res = `<strong style="color: #333">${params[0].name}</strong><br/>`;
         params.forEach(item => {
@@ -183,81 +219,140 @@ const initChart = () => {
     },
     legend: {
       data: [
-        { name: 'CVD', itemStyle: { color: '#ff4d4f' } },   // 强制图例使用标准的红色
-        { name: 'Healthy', itemStyle: { color: '#1890ff' } } // 强制图例使用标准的蓝色
+        { name: 'CVD', itemStyle: { color: '#ff4d4f' } },
+        { name: 'Healthy', itemStyle: { color: '#1890ff' } }
       ],
-      bottom: '5%',
+      top: 8,
+      right: '8%',
       itemWidth: 14,
-      itemHeight: 14
+      itemHeight: 14,
+      icon: 'roundRect',
+      textStyle: {
+        color: '#475569',
+        fontSize: 11,
+        fontWeight: 600
+      },
+      selectedMode: false
     },
     grid: {
-      left: '20%', 
-      right: '10%',
-      top: '15%',
-      bottom: '20%'
+      left: '18%',
+      right: '8%',
+      top: 48,
+      bottom: 18
     },
     xAxis: {
       type: 'value',
       max: 100, 
-      show: false 
+      show: false
     },
     yAxis: {
       type: 'category',
       data: ['Background', 'Selected Group'],
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { fontWeight: 'bold', color: '#595959' }
+      axisLabel: {
+        fontWeight: 700,
+        fontSize: 11,
+        color: '#475569',
+        margin: 14
+      }
     },
     series: [
       {
         name: 'CVD',
         type: 'bar',
         stack: 'total',
-        barWidth: 50,
+        barWidth: 46,
+        barCategoryGap: '44%',
         label: {
           show: true,
-          position: 'inside',
+          position: 'insideLeft',
+          padding: [0, 0, 0, 6],
           color: '#fff',
-          formatter: (p) => `${p.data.raw}\n(${p.value.toFixed(1)}%)`
+          fontSize: 10.5,
+          fontWeight: 700,
+          textBorderColor: 'rgba(15, 23, 42, 0.22)',
+          textBorderWidth: 2,
+          formatter: (p) => formatSegmentLabel(p, 12)
         },
         data: [
-          // Background Row: 浅红
-          { value: getP(uCVD, totalU), raw: uCVD, itemStyle: { color: 'rgba(255, 77, 79, 0.3)' } },
-          // Selected Row: 标准红
-          { value: getP(sCVD, totalS), raw: sCVD, itemStyle: { color: '#ff4d4f' } }
+          {
+            value: getP(uCVD, totalU),
+            raw: uCVD,
+            itemStyle: {
+              color: backgroundCvdColor,
+              borderRadius: [10, 0, 0, 10]
+            }
+          },
+          {
+            value: getP(sCVD, totalS),
+            raw: sCVD,
+            itemStyle: {
+              color: selectedCvdColor,
+              borderRadius: [10, 0, 0, 10],
+              shadowColor: 'rgba(255, 77, 79, 0.3)',
+              shadowBlur: 8,
+              shadowOffsetY: 2
+            }
+          }
         ]
       },
       {
         name: 'Healthy',
         type: 'bar',
         stack: 'total',
+        barWidth: 46,
         label: {
           show: true,
           position: 'inside',
           color: '#fff',
-          formatter: (p) => `${p.data.raw}\n(${p.value.toFixed(1)}%)`
+          fontSize: 10.5,
+          fontWeight: 700,
+          textBorderColor: 'rgba(15, 23, 42, 0.16)',
+          textBorderWidth: 2,
+          formatter: (p) => formatSegmentLabel(p, 18)
         },
         data: [
-          // Background Row: 浅蓝
-          { value: getP(uNo, totalU), raw: uNo, itemStyle: { color: 'rgba(24, 144, 255, 0.3)' } },
-          // Selected Row: 标准蓝
-          { value: getP(sNo, totalS), raw: sNo, itemStyle: { color: '#1890ff' } }
+          {
+            value: getP(uNo, totalU),
+            raw: uNo,
+            itemStyle: {
+              color: backgroundHealthyColor,
+              borderRadius: [0, 10, 10, 0]
+            }
+          },
+          {
+            value: getP(sNo, totalS),
+            raw: sNo,
+            itemStyle: {
+              color: selectedHealthyColor,
+              borderRadius: [0, 10, 10, 0],
+              shadowColor: 'rgba(24, 144, 255, 0.28)',
+              shadowBlur: 8,
+              shadowOffsetY: 2
+            }
+          }
         ]
       }
     ]
   };
 
-  myChart.setOption(option);
+  myChart.setOption(option, true);
 };
 watch(() => props.processObject, () => initChart(), { deep: true });
 const handleResize = () => myChart?.resize()
 onMounted(() => {
-  window.addEventListener('resize', () => handleResize());
+  window.addEventListener('resize', handleResize);
   initChart();
+  if (typeof ResizeObserver !== 'undefined' && donutChartRef.value) {
+    resizeObserver = new ResizeObserver(() => handleResize());
+    resizeObserver.observe(donutChartRef.value);
+  }
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', () => handleResize());
+  window.removeEventListener('resize', handleResize);
+  resizeObserver?.disconnect();
   myChart?.dispose();
 });
 // 1. 新增：计算背景组（全部数据）的统计
@@ -293,6 +388,7 @@ return {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
@@ -300,16 +396,17 @@ return {
 }
 
 .guidance-section {
-  padding: 20px;
+  padding: 16px 18px 14px;
   background: #f8fbff;
   border-bottom: 1px solid #e6effb;
-  height: 270px;
+  height: auto;
+  flex-shrink: 0;
 }
 
 .header-row {
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 6px;
 }
 
 .pulse-icon {
@@ -331,6 +428,12 @@ return {
   letter-spacing: 0.5px;
 }
 
+.section-subtitle {
+  margin: 0 0 12px;
+  font-size: 11px;
+  color: #64748b;
+}
+
 .filter-status {
   font-size: 13px;
   color: #595959;
@@ -338,60 +441,108 @@ return {
 }
 
 .dynamic-narrative {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.7;
   color: #262626;
   background: #fff;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
   border-left: 4px solid #1890ff;
-  margin-bottom: 15px;
-  height: 110px;
+  margin-bottom: 12px;
+  min-height: 98px;
+  height: auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 
 .metric-card {
   text-align: center;
-  padding: 8px;
+  padding: 10px 8px;
   background: #fff;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  height: 65px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 10px;
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .metric-card .label {
   display: block;
   font-size: 11px;
-  color: #8c8c8c;
+  color: #64748b;
   margin-bottom: 4px;
 }
 
 .metric-card .value {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
 }
 .metric-card:hover { transform: translateY(-2px); }
 .red { color: #cf1322; }
+.green { color: #15803d; }
 .blue { color: #096dd9; }
 .purple { color: #722ed1; }
+
+.chart-block {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px 0;
+  border-top: 1px solid rgba(203, 213, 225, 0.5);
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 22%);
+}
 
 .chart-canvas {
   flex: 1;
   width: 100%;
-  min-height: 350px;
+  min-height: 250px;
 }
 
 .chart-legend-hint {
   text-align: center;
-  padding: 10px;
-  color: #bfbfbf;
+  padding: 8px 10px 12px;
+  color: #94a3b8;
+  background: #fff;
+  font-size: 11px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1200px) {
+  .guidance-section {
+    padding: 14px 14px 12px;
+  }
+
+  .metrics-grid {
+    gap: 8px;
+  }
+
+  .chart-block {
+    padding: 8px 10px 0;
+  }
+
+  .chart-canvas {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 900px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-card {
+    height: auto;
+    min-height: 62px;
+  }
 }
 
 @keyframes pulse {
