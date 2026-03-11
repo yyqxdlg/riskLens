@@ -1,33 +1,39 @@
 <template>
   <div class="range-wrapper">
+    <div class="range-overview-header">
+      <h2 class="overview-title">Subgroup Distribution &amp; Risk Impact</h2>
+      <p class="overview-subtitle">
+        Compare subgroup composition and relative risk against the full cohort baseline.
+      </p>
+    </div>
+
     <div class="chart-stage">
       <aside class="guidance-section">
-        <div class="header-row">
-          <span class="pulse-icon"></span>
-          <h3 class="section-title">Distribution Context</h3>
-        </div>
-
         <div class="dynamic-narrative">
           <div class="guide-metrics">
             <div class="guide-metric">
-              <span class="metric-label">Filtered Cohort</span>
+              <span class="metric-label">Subgroup Size</span>
               <span class="metric-value">{{ filteredPopulationCount.toLocaleString() }}</span>
             </div>
             <div class="guide-metric">
-              <span class="metric-label">Population Share</span>
+              <span class="metric-label">Filtered Share</span>
               <span class="metric-value">{{ filteredPopulationShareText }}</span>
             </div>
           </div>
           <p class="guide-hook">
-            <strong>Gray</strong> shows the full-population share. <strong>Blue and orange</strong> show the selected subgroup as a
-            share of all people.
+            <strong>Gray</strong> is the all-population baseline. <strong>Blue and orange</strong> show the current
+            subgroup after filters are applied.
           </p>
           <div class="guide-legend-row">
-            <span class="legend-chip"><span class="legend-swatch bg"></span>All population</span>
-            <span class="legend-chip"><span class="legend-swatch healthy"></span>Selected No CVD</span>
-            <span class="legend-chip"><span class="legend-swatch risk"></span>Selected CVD</span>
+            <span class="legend-chip"><span class="legend-swatch bg"></span>Baseline All</span>
+            <span class="legend-chip"><span class="legend-swatch healthy"></span>Filtered No CVD</span>
+            <span class="legend-chip"><span class="legend-swatch risk"></span>Filtered CVD</span>
           </div>
-          <p class="guide-summary">The percentage axis contracts around active selections so low-prevalence groups remain readable.</p>
+          <p class="guide-summary">
+            {{ viewMode === 'composition'
+              ? 'Distribution view adapts its percentage axis to active subgroup filters for better readability.'
+              : 'Impact view compares each filtered subgroup against its all-population baseline.' }}
+          </p>
         </div>
       </aside>
 
@@ -37,7 +43,7 @@
           <span class="loading-heart" aria-hidden="true">
             <span class="heart-shape"></span>
           </span>
-          <span class="loading-text">Updating linked distributions...</span>
+          <span class="loading-text">Updating filtered distributions...</span>
         </div>
       </div>
     </div>
@@ -49,14 +55,14 @@
           :class="{ active: viewMode === 'composition' }"
           @click="setViewMode('composition')"
         >
-          Composition
+          Distribution
         </span>
         <span
           class="mode-chip"
           :class="{ active: viewMode === 'impact' }"
           @click="setViewMode('impact')"
         >
-          Impact
+          Filter Impact
         </span>
       </div>
 
@@ -64,7 +70,7 @@
         <span class="selection-state" :class="{ active: hasAnyLeftSelection }" :title="selectionSummaryText">
           {{ selectionSummaryText }}
         </span>
-        <span class="row-link" :class="{ disabled: !hasAnyLeftSelection }" @click="clearLeftSelection">Clear Left Filters</span>
+        <span class="row-link" :class="{ disabled: !hasAnyLeftSelection }" @click="clearLeftSelection">Clear Subgroup Filters</span>
       </div>
     </div>
   </div>
@@ -492,15 +498,15 @@ const selectionSummaryText = computed(() => {
     .filter(Boolean)
 
   if (tokens.length) {
-    return `Active filters: ${tokens.join(' | ')}`
+    return `Subgroup filters: ${tokens.join(' | ')}`
   }
 
   const hasBarSelection = chartDimensions.some(dim => (selectedBarIdsByDim.value[dim.key] || []).length > 0)
   if (hasBarSelection) {
-    return 'Selection covers all groups in this row (equivalent to no filter)'
+    return 'Current row selection spans all bins (acts as no filter)'
   }
 
-  return 'Click bars to filter'
+  return 'Click bars to apply subgroup filters'
 })
 
 const sameArray = (a = [], b = []) => {
@@ -1792,6 +1798,28 @@ const userInteractedDims = ref(new Set())
   background: transparent;
 }
 
+.range-overview-header {
+  padding: 4px 4px 10px;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.4);
+  margin-bottom: 10px;
+}
+
+.overview-title {
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #0f3b87;
+}
+
+.overview-subtitle {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #64748b;
+}
+
 .chart-stage {
   position: relative;
   flex: 1;
@@ -1808,30 +1836,6 @@ const userInteractedDims = ref(new Set())
   border: 1px solid #e6effb;
   border-radius: 12px;
   min-height: 0;
-}
-
-.header-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.pulse-icon {
-  width: 10px;
-  height: 10px;
-  background: #1890ff;
-  border-radius: 50%;
-  margin-right: 10px;
-  box-shadow: 0 0 0 rgba(24, 144, 255, 0.4);
-  animation: pulse 2s infinite;
-}
-
-.section-title {
-  margin: 0;
-  font-size: 14px;
-  color: #003a8c;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .dynamic-narrative {
@@ -2095,6 +2099,19 @@ const userInteractedDims = ref(new Set())
 }
 
 @media (max-width: 900px) {
+  .range-overview-header {
+    padding: 2px 2px 8px;
+    margin-bottom: 8px;
+  }
+
+  .overview-title {
+    font-size: 20px;
+  }
+
+  .overview-subtitle {
+    font-size: 12px;
+  }
+
   .chart-stage {
     grid-template-columns: 1fr;
   }
@@ -2102,12 +2119,6 @@ const userInteractedDims = ref(new Set())
   .guide-metrics {
     grid-template-columns: 1fr;
   }
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(24, 144, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
 }
 
 @keyframes heartBeat {
