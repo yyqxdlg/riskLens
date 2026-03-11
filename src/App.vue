@@ -97,6 +97,7 @@
           </section>
           <section class="panel-card rightPart">
             <div class="selection-narrative">
+              <h2 class="selection-title">Subgroup Snapshot</h2>
               <p v-if="totalSelected > 0">
                 Based on the filters, You have isolated a subgroup of <strong>{{ totalSelected.toLocaleString() }}</strong> individuals.
                 consisting of <strong class="red">{{ selectedCVDCount.toLocaleString() }}</strong> CVD cases
@@ -161,7 +162,7 @@ import groupData from '@/assets/riskless_data_all_years.json';
 import TimeMachine from './components/TimeMachine.vue';
 import AboutPage from './components/AboutPage.vue';
 import TeamPage from './components/TeamPage.vue';
-import logoSrc from '@/assets/risklenslogo.png';
+import logoSrc from '@/assets/risklenslogo-header.png';
 
 
   const rawGroupData = ref([])
@@ -637,10 +638,7 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
   -moz-osx-font-smoothing: grayscale;
   color: #1f3b53;
   min-height: 100vh;
-  background:
-    radial-gradient(120% 70% at 10% -10%, rgba(59, 130, 246, 0.13), transparent 60%),
-    radial-gradient(110% 70% at 95% 0%, rgba(20, 184, 166, 0.09), transparent 60%),
-    linear-gradient(180deg, #f4f9ff 0%, #f8fbff 36%, #f5f8fc 100%);
+  background: #f8fafc;
 }
 
 :deep(.ant-tabs-nav) {
@@ -762,43 +760,90 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 }
 
 .form-card {
-  padding: 10px 12px 8px;
+  padding: 18px 20px 16px;
 }
 
 .form-card-header {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-bottom: 4px;
-  min-height: 42px;
+  margin-bottom: 28px;
+  min-height: 50px;
 }
 
 .form-card-logo {
-  width: 184px;
+  width: 162px;
   max-width: 46%;
   height: auto;
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 2px 6px rgba(30, 64, 175, 0.12));
+  filter: none;
+}
+
+.form-card :deep(.compact-grid) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.form-card :deep(.field-inline) {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  min-width: 0;
+}
+
+.form-card :deep(.inline-label) {
+  width: 100%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.form-card :deep(.inline-control-wrap) {
+  min-width: 0;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.form-card :deep(.inline-control) {
+  width: 100%;
+  max-width: 280px;
+}
+
+.form-card :deep(.intake-form) {
+  gap: 14px;
+}
+
+.form-card :deep(.action-row) {
+  padding-top: 14px;
+}
+
+.form-card :deep(.action-group) {
+  gap: 14px;
 }
 
 .topOverviewRow {
   display: grid;
   grid-template-columns: minmax(0, 1.32fr) minmax(360px, 1fr);
   gap: 10px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.topOverviewRow > .panel-card {
+  height: 100%;
 }
 
 .userScoreCard {
-  padding: 0;
+  padding: 18px 20px 16px;
   overflow: hidden;
 }
 
 .guidance-section {
-  padding: 20px;
-  background: #f8fbff;
-  border-bottom: 1px solid #e6effb;
-  height: auto;
+  padding: 0;
+  background: transparent;
+  border-bottom: 0;
+  height: 100%;
+  width: 100%;
 }
 
 .header-row {
@@ -1031,8 +1076,8 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 
 .rangePart {
   width: 100%;
-  height: 440px;
-  min-height: 440px;
+  height: 560px;
+  min-height: 560px;
   padding: 8px 8px 6px;
 }
 
@@ -1043,13 +1088,20 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 
 .selection-narrative {
   margin: 14px 14px 12px;
-  border-left: 4px solid #2563eb;
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: #ffffff;
+  padding: 2px 2px 4px;
+  background: transparent;
   font-size: 13px;
   line-height: 1.6;
   color: #475569;
+}
+
+.selection-title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #0f3b87;
 }
 
 .selection-narrative p {
@@ -1086,7 +1138,11 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .rangePart,
+  .rangePart {
+    height: 540px;
+    min-height: 540px;
+  }
+
   .rightPart {
     height: 440px;
     min-height: 440px;
@@ -1094,9 +1150,39 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 }
 
 @media (max-width: 900px) {
+  .selection-title {
+    font-size: 20px;
+  }
+
+  .rangePart {
+    height: 500px;
+    min-height: 500px;
+  }
+
+  .form-card {
+    padding: 16px 16px 14px;
+  }
+
   .form-card-logo {
     width: 154px;
     max-width: 58%;
+  }
+
+  .form-card-header {
+    margin-bottom: 20px;
+  }
+
+  .form-card :deep(.compact-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 18px;
+  }
+
+  .form-card :deep(.field-inline) {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+
+  .form-card :deep(.inline-control) {
+    max-width: none;
   }
 
   .topFilterRow {
@@ -1129,9 +1215,30 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 }
 
 @media (max-width: 640px) {
+  .selection-title {
+    font-size: 18px;
+  }
+
+  .form-card {
+    padding: 14px 12px 12px;
+  }
+
   .form-card-logo {
     width: 132px;
     max-width: 72%;
+  }
+
+  .form-card-header {
+    margin-bottom: 16px;
+  }
+
+  .form-card :deep(.compact-grid) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .form-card :deep(.field-inline) {
+    grid-template-columns: 76px minmax(0, 1fr);
   }
 
   .status-badge-grid {
