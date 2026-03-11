@@ -1,9 +1,9 @@
 <template>
   <div class="range-wrapper">
     <div class="range-overview-header">
-      <h2 class="overview-title">Subgroup Distribution &amp; Risk Impact</h2>
+      <h2 class="overview-title">Subgroup Distribution</h2>
       <p class="overview-subtitle">
-        Compare subgroup composition and relative risk against the full cohort baseline.
+        Compare subgroup composition against the full cohort baseline.
       </p>
     </div>
 
@@ -30,9 +30,7 @@
             <span class="legend-chip"><span class="legend-swatch risk"></span>Filtered CVD</span>
           </div>
           <p class="guide-summary">
-            {{ viewMode === 'composition'
-              ? 'Distribution view adapts its percentage axis to active subgroup filters for better readability.'
-              : 'Impact view compares each filtered subgroup against its all-population baseline.' }}
+            Distribution view adapts its percentage axis to active subgroup filters for better readability.
           </p>
         </div>
       </aside>
@@ -49,23 +47,6 @@
     </div>
 
     <div class="control-row">
-      <div class="mode-switch" aria-label="Range chart mode">
-        <span
-          class="mode-chip"
-          :class="{ active: viewMode === 'composition' }"
-          @click="setViewMode('composition')"
-        >
-          Distribution
-        </span>
-        <span
-          class="mode-chip"
-          :class="{ active: viewMode === 'impact' }"
-          @click="setViewMode('impact')"
-        >
-          Filter Impact
-        </span>
-      </div>
-
       <div class="row-meta">
         <span class="selection-state" :class="{ active: hasAnyLeftSelection }" :title="selectionSummaryText">
           {{ selectionSummaryText }}
@@ -1618,12 +1599,6 @@ const renderUserMarkersOnly = () => {
   })
 }
 
-const setViewMode = (mode) => {
-  if (!['composition', 'impact'].includes(mode) || viewMode.value === mode) return
-  viewMode.value = mode
-  renderChart()
-}
-
 // ✅ 正确写法
 const toggleCategorySelection = (dimKey, category) => {
   // 直接读当前值，context 预设的 Young Adult 还在里面
@@ -2017,7 +1992,7 @@ const userInteractedDims = ref(new Set())
   height: 36px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   border-top: 1px solid rgba(148, 163, 184, 0.28);
   background: linear-gradient(180deg, rgba(248, 251, 255, 0.78), rgba(244, 248, 253, 0.78));
   padding: 0 10px;
