@@ -23,11 +23,26 @@ npm run lint
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
 
-
 # RiskLens
 
 RiskLens is an interactive educational visualization website for exploring cardiovascular-related health factors.  
 It allows users to enter personal health metrics, review a heuristic clinical profile score, compare themselves with the overall and filtered population, and inspect how metric changes affect the resulting profile.
+
+## Project Overview
+
+RiskLens is designed as a course project for clinical risk sensemaking and health-data visualization.  
+The website supports user input, subgroup comparison, heuristic profile scoring, and risk simulation through an integrated visual interface.
+
+This project is intended for educational visualization purposes only and does not provide medical advice or clinical diagnosis.
+
+## Website Structure
+
+The website currently includes the following pages:
+
+- **Home** — main interaction and visualization interface
+- **About** — project overview, team information, data abstraction and provenance, task abstraction, scoring logic, feedback incorporation, future work, references, and project links
+- **Team** — team member profiles, contribution breakdown, and contact information
+- **Demo** — dedicated page for the project demo and presentation access
 
 ## Live Website
 
@@ -37,9 +52,9 @@ https://yyqxdlg.github.io/riskLens/
 
 https://github.com/yyqxdlg/riskLens/tree/main
 
-## Demo Video
+## Demo
 
-The final 2-minute demo video will be linked or embedded in the website's Demo page.
+The website includes a dedicated Demo page for project presentation and walkthrough access.
 
 ## Main Features
 
@@ -52,17 +67,21 @@ The final 2-minute demo video will be linked or embedded in the website's Demo p
 
 ## Team Members & Workload Distribution
 
-### YUZHANG — 50%
+### YU ZHANG — 50%
 - Literature review and background research
 - Raw data download, cleaning, and preprocessing
 - Project planning and design
-- Implementation of the summary part, radar part, and risk simulator
+- Implementation of the summary view
+- Implementation of the radar comparison view
+- Implementation of the risk simulator
 - Bug fixing, testing, and About-page documentation
 
-### LIUZIFEI — 50%
+### ZIFEI LIU — 50%
 - Literature review and background research
 - Project planning and design
-- Implementation of onboarding, range comparison, and user form modules
+- Implementation of the onboarding flow
+- Implementation of the range comparison module
+- Implementation of the user form module
 - UI refinement and layout optimization
 - Bug fixing and testing
 
@@ -96,11 +115,13 @@ The system then computes:
 
 RiskLens uses publicly available data from the CDC’s National Health and Nutrition Examination Survey (NHANES).
 
-Data source:
+Data source:  
 https://wwwn.cdc.gov/nchs/nhanes/default.aspx
 
 Multiple NHANES survey-cycle files were downloaded, cleaned, merged, and transformed into the fields used in the interface.  
-This project is an educational visualization and not a medical diagnosis system.
+Thresholds shown in the system were adapted from public-health references and class discussion for educational visualization purposes.
+
+The website is based on processed public data rather than live medical records.
 
 ## Task Abstraction
 
@@ -108,18 +129,47 @@ RiskLens supports the following user tasks:
 
 1. **Identify** personal health status from entered clinical metrics
 2. **Compare** personal values against the overall population and filtered peer groups
-3. **Inspect** how each metric contributes to the overall profile score
-4. **Simulate** how changing values may alter the resulting risk-related profile
+3. **Inspect** how each metric contributes to the overall clinical profile score
+4. **Simulate** how changing values may alter the resulting profile over time
 
-## Feedback Incorporation
+## Clinical Scoring Logic
+
+The scoring table used in RiskLens is a heuristic educational summary for interpretation and comparison.  
+It is not intended to represent a clinical diagnosis model or validated medical prediction system.
+
+The current scoring logic is based on five dimensions:
+
+- Age
+- BMI
+- Systolic blood pressure
+- Total cholesterol
+- Diabetes status
+
+Each metric contributes a positive, neutral, or negative score depending on its category.  
+The total score is then mapped to an educational overall risk summary.
+
+## Feedback Incorporation & Design Decisions
 
 The final website incorporates presentation feedback in several ways:
 
-- Added a built-in BMI calculator
-- Improved click-based subgroup interaction in the range comparison view
-- Refined diabetes-related labels for better clarity
-- Adjusted chart presentation and spacing in subgroup comparison views
-- Strengthened the connection between user input and population comparison
+- Clarified diabetes-related labels to reduce ambiguity in the interface
+- Added a built-in BMI calculator so users do not need to leave the website
+- Improved click-based subgroup interaction in the comparison view
+- Refined chart presentation for dimensions with different category counts
+- Strengthened the connection between user input and peer-group comparison
+
+The design process did not treat feedback as a checklist alone.  
+Instead, feedback was reviewed, interpreted, and incorporated according to dataset constraints, interface clarity, and the overall goals of the visualization.
+
+## Future Work
+
+Possible future extensions include:
+
+- clearer percentile-based peer positioning
+- additional health and lifestyle variables
+- more transparent score explanations
+- stronger explanation of score weighting choices
+- improved demo integration and further responsive refinement
 
 ## Clinical References
 
@@ -128,11 +178,10 @@ This educational scoring system and categorization design were informed by publi
 - CDC / NHANES
 - CDC BMI-related guidance
 - ACC/AHA blood pressure guideline references
-- Public-health references for cholesterol categorization
+- public-health references for cholesterol categorization
 
 ## Project Setup
 
 ```bash
 npm install
 npm run serve
-
