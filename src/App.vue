@@ -141,6 +141,15 @@
         </template>
         <TeamPage></TeamPage>
       </a-tab-pane>
+      <a-tab-pane key="4">
+        <template #tab>
+          <span>
+            <VideoCameraTwoTone two-tone-color="#eb2f96" />
+            Demo
+          </span>
+        </template>
+        <DemoPart></DemoPart>
+      </a-tab-pane>
     </a-tabs>
   
   
@@ -151,7 +160,7 @@
 <script setup>
 // import DashBoard from './components/DashBoard.vue'
 import {ref, onMounted, watch, computed} from 'vue'
-import { HeartTwoTone, IdcardTwoTone ,BulbTwoTone} from '@ant-design/icons-vue';
+import { HeartTwoTone, IdcardTwoTone, BulbTwoTone, VideoCameraTwoTone } from '@ant-design/icons-vue';
 import UserForm from './components/UserForm.vue'
 import OnboardingFlow from './components/OnboardingFlow.vue'
 import RadarPart from './components/RadarPart.vue'
@@ -163,7 +172,7 @@ import TimeMachine from './components/TimeMachine.vue';
 import AboutPage from './components/AboutPage.vue';
 import TeamPage from './components/TeamPage.vue';
 import logoSrc from '@/assets/risklenslogo-header.png';
-
+import DemoPart from './components/DemoPart.vue';
 
   const rawGroupData = ref([])
 

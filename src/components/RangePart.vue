@@ -131,8 +131,8 @@ const shortLabelMap = {
   Overweight: 'Over',
   'Stage 1': 'S1',
   'Stage 2': 'S2',
-  'Non-Diabetic': 'Non-DM',
-  Diabetic: 'DM'
+  'Non-Diabetic': 'No Diabetes',
+  Diabetic: 'Diabetes'
 }
 
 const INPUT_LIMITS = {

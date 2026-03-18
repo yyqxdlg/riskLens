@@ -1,109 +1,228 @@
 <template>
-  <div class="risklens-intro-container">
-    <header class="hero-section">
-      <div class="pulse-container">
-        <div class="pulse-icon"></div>
-        <h1 class="main-title">RiskLens: Clinical Risk Sensemaking</h1>
+  <div class="about-page">
+    <section class="hero-card">
+      <div class="hero-badge">
+        <InfoCircleOutlined />
+        <span>About RiskLens</span>
       </div>
-      <p class="hero-subtitle">
-        Bridging the gap between raw clinical datasets and human-centric cardiovascular health insights.
+      <h1>RiskLens: Clinical Risk Sensemaking</h1>
+      <p class="hero-copy">
+        RiskLens is an interactive educational visualization website for exploring cardiovascular-related health factors.
+        Users can enter their own clinical measurements, review a heuristic profile score, compare themselves with the
+        overall and filtered population, and inspect how changes in metrics affect the resulting profile.
       </p>
-    </header>
+      <p class="hero-note">
+        This project is designed for educational data visualization purposes and does not provide medical advice or clinical diagnosis.
+      </p>
+    </section>
 
-    <section class="info-section">
-      <h2 class="section-label">How It Works & Features</h2>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="card-icon">🎯</div>
+    <section class="section-card">
+      <div class="section-heading with-icon">
+        <div class="heading-icon purple">
+          <BulbOutlined />
+        </div>
+        <div>
+          <p class="section-kicker">Project Overview</p>
+          <h2>What this website does</h2>
+        </div>
+      </div>
+
+      <div class="overview-grid">
+        <div class="mini-card">
+          <div class="mini-icon"><ProfileOutlined /></div>
           <h3>Clinical Fingerprinting</h3>
-          <p>Input your 5 core health metrics to generate a personalized radar profile. Compare your "fingerprint" against the NHANES population benchmarks.</p>
+          <p>
+            Enter core health metrics and generate a personal profile that summarizes the user’s clinical status.
+          </p>
         </div>
-        <div class="feature-card">
-          <div class="card-icon">⏳</div>
-          <h3>Risk Time Machine</h3>
-          <p>Simulate how your physiological profile evolves over life stages. Our simulator accounts for <strong>Survival Bias</strong> to pinpoint peak risk years.</p>
+        <div class="mini-card">
+          <div class="mini-icon"><AimOutlined /></div>
+          <h3>Peer Comparison</h3>
+          <p>
+            Compare personal values against the overall cohort and filtered subgroups to understand where the user fits within the population.
+          </p>
         </div>
-        <div class="feature-card">
-          <div class="card-icon">📊</div>
-          <h3>Peer Benchmarking</h3>
-          <p>Isolated from 25,000+ real records, see exactly how you stand compared to peers with similar BMI, SBP, and Cholesterol levels.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="info-section">
-      <h2 class="section-label">Data Sources & Clinical Categorization</h2>
-      <p class="data-source-note">
-        <strong>Data Source:</strong> NHANES 2011-2023. Our system strictly adheres to global standards from <strong>AHA/ACC, CDC, and NIH</strong>.
-      </p>
-
-      <div class="logic-card">
-        <div class="table-wrapper">
-          <table class="logic-table">
-            <thead>
-              <tr>
-                <th>Dimension</th>
-                <th>Clinical Reference</th>
-                <th>Detailed Categorization Logic</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="dim-name">Age</td>
-                <td>Clinical Lifespan Stages</td>
-                <td>
-                  <span class="tag green">&lt;40: Young Adult</span>
-                  <span class="tag">40–59: Middle-Aged (Screening)</span>
-                  <span class="tag">60–74: Senior</span>
-                  <span class="tag"> &gt;75: Elderly</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="dim-name">BMI</td>
-                <td>CDC Standards</td>
-                <td>
-                  <span class="tag yellow">&lt; 18.5: Underweight</span>
-                  <span class="tag green">18.5–24.9: Healthy</span>
-                  <span class="tag yellow">25.0–29.9: Overweight</span>
-                  <span class="tag red">30.0–34.9: Obese I</span>
-                  <span class="tag dark-red">≥ 35.0: Severe Obesity</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="dim-name">Systolic BP</td>
-                <td>2017 AHA/ACC Guidelines</td>
-                <td>
-                  <span class="tag green">&lt; 120: Normal</span>
-                  <span class="tag yellow">120–129: Elevated</span>
-                  <span class="tag orange">130–139: Stage 1</span>
-                  <span class="tag red">140–179: Stage 2</span>
-                  <span class="tag dark-red">≥ 180: Crisis</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="dim-name">Total Chol</td>
-                <td>NIH/ATP III Standards</td>
-                <td>
-                  <span class="tag green">&lt; 200: Desirable</span>
-                  <span class="tag yellow">200–239: Borderline</span>
-                  <span class="tag red">240–399: High</span>
-                  <span class="tag dark-red">≥ 400: Extreme (Familial Risk)</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="mini-card">
+          <div class="mini-icon"><RocketOutlined /></div>
+          <h3>Risk Simulation</h3>
+          <p>
+            Explore how changes across life stages and metric values may affect the resulting educational risk profile.
+          </p>
         </div>
       </div>
     </section>
 
-    <section class="info-section">
-      <h2 class="section-label">System Scoring Engine</h2>
-      <p class="data-source-note">
-        The following weights are used to calculate your <strong>Total Health Score</strong> and determine the risk level (Low, Moderate, High).
+    <section class="section-card">
+      <div class="section-heading with-icon">
+        <div class="heading-icon blue">
+          <TeamOutlined />
+        </div>
+        <div>
+          <p class="section-kicker">Team</p>
+          <h2>Team Members & Workload Distribution</h2>
+        </div>
+      </div>
+
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="member-top">
+            <div class="member-avatar">YZ</div>
+            <div>
+              <h3>YUZHANG</h3>
+              <p class="workload">Workload: 50%</p>
+            </div>
+          </div>
+          <ul>
+            <li>Literature review and background research</li>
+            <li>Raw data download, cleaning, and preprocessing</li>
+            <li>Project planning and design</li>
+            <li>Implementation of the summary view, radar view, and risk simulator</li>
+            <li>Bug fixing, testing, and About-page documentation</li>
+          </ul>
+        </div>
+
+        <div class="team-card">
+          <div class="member-top">
+            <div class="member-avatar alt">LZ</div>
+            <div>
+              <h3>LIUZIFEI</h3>
+              <p class="workload">Workload: 50%</p>
+            </div>
+          </div>
+          <ul>
+            <li>Literature review and background research</li>
+            <li>Project planning and design</li>
+            <li>Implementation of the onboarding flow, range comparison, and user form modules</li>
+            <li>UI refinement and layout optimization</li>
+            <li>Bug fixing and testing</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading with-icon">
+        <div class="heading-icon teal">
+          <DatabaseOutlined />
+        </div>
+        <div>
+          <p class="section-kicker">Data</p>
+          <h2>Data Abstraction & Provenance</h2>
+        </div>
+      </div>
+
+      <div class="two-col-grid">
+        <div class="info-block">
+          <div class="block-label">
+            <ApartmentOutlined />
+            <span>Data Abstraction</span>
+          </div>
+          <ul class="detail-list">
+            <li>
+              <strong>Data subjects:</strong>
+              individual NHANES participants represented as person-level records in the analysis pipeline.
+            </li>
+            <li>
+              <strong>Primary attributes:</strong>
+              age, BMI, systolic blood pressure, total cholesterol, and diabetes status.
+            </li>
+            <li>
+              <strong>Derived categories:</strong>
+              age group, BMI category, blood pressure category, cholesterol category, and diabetes diagnosis status.
+            </li>
+            <li>
+              <strong>Computed outputs:</strong>
+              metric-level scores, overall profile score, risk category, subgroup comparison summaries, and simulation results.
+            </li>
+            <li>
+              <strong>Visual abstraction:</strong>
+              raw clinical values are transformed into interpretable categories, scores, and comparative views to support user sensemaking.
+            </li>
+          </ul>
+        </div>
+
+        <div class="info-block">
+          <div class="block-label">
+            <FileSearchOutlined />
+            <span>Data Provenance</span>
+          </div>
+          <ul class="detail-list">
+            <li>
+              The project uses publicly available NHANES data provided by the
+              <strong>Centers for Disease Control and Prevention (CDC)</strong>.
+            </li>
+            <li>
+              Multiple NHANES survey-cycle files were downloaded, cleaned, merged, and transformed into the fields used by the interface.
+            </li>
+            <li>
+              Thresholds shown in the system were adapted from public-health references and class discussion for educational visualization purposes.
+            </li>
+            <li>
+              The website is intended as an interpretive classroom visualization rather than a medical prediction system.
+            </li>
+            <li>
+              All visual summaries depend on processed public datasets rather than live medical records.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading with-icon">
+        <div class="heading-icon orange">
+          <NodeIndexOutlined />
+        </div>
+        <div>
+          <p class="section-kicker">Tasks</p>
+          <h2>Task Abstraction</h2>
+        </div>
+      </div>
+
+      <div class="task-grid">
+        <div class="task-card">
+          <div class="task-icon"><SearchOutlined /></div>
+          <h3>Identify</h3>
+          <p>Identify personal health status from entered clinical metrics.</p>
+        </div>
+        <div class="task-card">
+          <div class="task-icon"><BarChartOutlined /></div>
+          <h3>Compare</h3>
+          <p>Compare personal values against the overall population and filtered peer groups.</p>
+        </div>
+        <div class="task-card">
+          <div class="task-icon"><FundOutlined /></div>
+          <h3>Inspect</h3>
+          <p>Inspect how each metric contributes to the overall clinical profile score.</p>
+        </div>
+        <div class="task-card">
+          <div class="task-icon"><SyncOutlined /></div>
+          <h3>Simulate</h3>
+          <p>Simulate how metric changes may alter the resulting profile over time.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading with-icon">
+        <div class="heading-icon red">
+          <BarChartOutlined />
+        </div>
+        <div>
+          <p class="section-kicker">Scoring</p>
+          <h2>Clinical Scoring Logic</h2>
+        </div>
+      </div>
+
+      <p class="section-copy">
+        The following score table is a heuristic educational summary used to support comparison and interpretation in the visualization.
+        It is not intended as a clinical diagnosis or formal medical risk model.
       </p>
 
       <div class="logic-card">
-        <div class="card-header"><h3>Individual Metric Scoring Weights</h3></div>
+        <div class="card-header">
+          <h3>Individual Metric Scoring Weights</h3>
+        </div>
         <div class="table-wrapper">
           <table class="logic-table">
             <thead>
@@ -120,70 +239,76 @@
               <tr>
                 <td class="dim-name">Age</td>
                 <td><span class="badge healthy">&lt; 40</span></td>
-                <td><span class="badge normal">40 - 85</span></td>
-                <td>—</td><td>—</td><td>—</td>
+                <td><span class="badge normal">≥ 40</span></td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
               </tr>
               <tr>
                 <td class="dim-name">BMI</td>
-                <td><span class="badge healthy">18.5-24.9</span></td><td>—</td>
-                <td><span class="badge warning">&lt;18.5/25-30</span></td>
-                <td><span class="badge critical">30-35</span></td>
+                <td><span class="badge healthy">18.5–24.9</span></td>
+                <td>—</td>
+                <td><span class="badge warning">&lt;18.5 / 25–30</span></td>
+                <td><span class="badge risk">30–35</span></td>
                 <td><span class="badge critical">≥ 35</span></td>
               </tr>
               <tr>
                 <td class="dim-name">SBP</td>
-                <td><span class="badge healthy">&lt; 120</span></td><td>—</td>
-                <td><span class="badge warning">120-130</span></td>
-                <td><span class="badge critical">130-180</span></td>
+                <td><span class="badge healthy">&lt; 120</span></td>
+                <td>—</td>
+                <td><span class="badge warning">120–130</span></td>
+                <td><span class="badge risk">130–180</span></td>
                 <td><span class="badge critical">≥ 180</span></td>
               </tr>
               <tr>
                 <td class="dim-name">Chol</td>
-                <td><span class="badge healthy">&lt; 200</span></td><td>—</td>
-                <td><span class="badge warning">200-240</span></td>
-                <td><span class="badge critical">240-400</span></td>
+                <td><span class="badge healthy">&lt; 200</span></td>
+                <td>—</td>
+                <td><span class="badge warning">200–240</span></td>
+                <td><span class="badge risk">240–400</span></td>
                 <td><span class="badge critical">≥ 400</span></td>
               </tr>
               <tr>
                 <td class="dim-name">Diabetes</td>
-                <td><span class="badge healthy">Non-DM</span></td><td>—</td><td>—</td><td>—</td>
-                <td><span class="badge critical">Diabetic</span></td>
+                <td><span class="badge healthy">No Diabetes</span></td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td><span class="badge critical">Diabetes</span></td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="logic-card" style="margin-top:20px;">
-        <div class="card-header"><h3>Overall Risk Classification</h3></div>
+      <div class="logic-card overall-card">
+        <div class="card-header">
+          <h3>Overall Risk Classification</h3>
+        </div>
         <div class="table-wrapper">
           <table class="logic-table">
             <thead>
               <tr>
                 <th>Risk Level</th>
                 <th>Total Score</th>
-                
-                <th>Clinical Insight</th>
+                <th>Interpretation</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><b style="color:var(--success-green)">LOW RISK</b></td>
+                <td><strong class="low-text">LOW RISK</strong></td>
                 <td><span class="score-tag">&gt; 0</span></td>
-               
-                <td>High alignment with healthy population benchmarks.</td>
+                <td>Higher alignment with healthier population benchmarks.</td>
               </tr>
               <tr>
-                <td><b style="color:var(--warning-gold)">MODERATE</b></td>
+                <td><strong class="mid-text">MODERATE</strong></td>
                 <td><span class="score-tag">= 0</span></td>
-               
-                <td>Mild deviations detected; focus on warning metrics.</td>
+                <td>Mixed profile with warning-level deviations.</td>
               </tr>
               <tr>
-                <td><b style="color:var(--error-red)">HIGH RISK</b></td>
+                <td><strong class="high-text">HIGH RISK</strong></td>
                 <td><span class="score-tag">&lt; 0</span></td>
-              
-                <td>Multiple critical deviations requiring attention.</td>
+                <td>Multiple risk-related deviations in the educational scoring summary.</td>
               </tr>
             </tbody>
           </table>
@@ -191,97 +316,610 @@
       </div>
     </section>
 
-    <footer class="intro-footer">
-      <p>This tool is for educational visualization. Always consult a healthcare professional for clinical diagnosis.</p>
+    <section class="section-card">
+      <div class="section-heading with-icon">
+        <div class="heading-icon gold">
+          <MessageOutlined />
+        </div>
+        <div>
+          <p class="section-kicker">Feedback</p>
+          <h2>Feedback Incorporation & Design Decisions</h2>
+        </div>
+      </div>
+
+      <div class="feedback-grid">
+        <div class="feedback-card">
+          <h3>Clarifying diabetes labels</h3>
+          <p><strong>Feedback:</strong> The abbreviation “DM” was unclear and could be interpreted ambiguously.</p>
+          <p><strong>Response:</strong> We replaced or refined diabetes-related labels across the interface with clearer wording.</p>
+          <p><strong>Design reasoning:</strong> The dataset does not explicitly distinguish diabetes type, so we prioritized clarity without overstating unavailable information.</p>
+        </div>
+
+        <div class="feedback-card">
+          <h3>Showing where the user fits in the population</h3>
+          <p><strong>Feedback:</strong> It was not immediately clear how users could understand where they fit within the broader population.</p>
+          <p><strong>Response:</strong> We strengthened summary interpretation, peer comparison views, and filtered subgroup analysis to make comparison more explicit.</p>
+          <p><strong>Design reasoning:</strong> Instead of relying on a single ranking number, we used multiple coordinated comparison views to support interpretation from different angles.</p>
+        </div>
+
+        <div class="feedback-card">
+          <h3>Built-in BMI calculator</h3>
+          <p><strong>Feedback:</strong> Users may not know their BMI and would otherwise need to leave the website.</p>
+          <p><strong>Response:</strong> We added a built-in BMI calculator directly into the user workflow.</p>
+          <p><strong>Design reasoning:</strong> This reduces friction during input and keeps the interaction self-contained.</p>
+        </div>
+
+        <div class="feedback-card">
+          <h3>Bar-chart spacing and visual density</h3>
+          <p><strong>Feedback:</strong> Some grouped bar displays looked visually separated or compressed.</p>
+          <p><strong>Response:</strong> We refined layout behavior, chart spacing, and presentation in subgroup comparison views.</p>
+          <p><strong>Design reasoning:</strong> Different dimensions naturally contain different numbers of categories, so the final layout balances consistency and readability rather than forcing identical density everywhere.</p>
+        </div>
+
+        <div class="feedback-card">
+          <h3>Click-based subgroup interaction</h3>
+          <p><strong>Feedback:</strong> Users suggested direct click interaction instead of manually deselecting multiple dimensions.</p>
+          <p><strong>Response:</strong> We improved click-based interaction in the comparison view to make subgroup exploration more direct.</p>
+          <p><strong>Design reasoning:</strong> This reduces unnecessary interaction steps and improves exploratory efficiency.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading with-icon">
+        <div class="heading-icon green">
+          <RocketOutlined />
+        </div>
+        <div>
+          <p class="section-kicker">Future Work</p>
+          <h2>Possible Extensions</h2>
+        </div>
+      </div>
+
+      <div class="future-grid">
+        <div class="future-card">
+          <h3>More personalized peer positioning</h3>
+          <p>
+            Add clearer percentile-based or rank-based summaries to help users more directly understand where they fall within relevant peer groups.
+          </p>
+        </div>
+        <div class="future-card">
+          <h3>Expanded health variables</h3>
+          <p>
+            Incorporate additional clinical or lifestyle attributes, such as smoking, exercise, or family history, when reliable data support is available.
+          </p>
+        </div>
+        <div class="future-card">
+          <h3>Improved scoring transparency</h3>
+          <p>
+            Provide more detailed explanations of how each metric contributes to the total profile and allow users to inspect alternative weighting strategies.
+          </p>
+        </div>
+        <div class="future-card">
+          <h3>More polished deployment support</h3>
+          <p>
+            Further refine responsiveness, embedded demo support, and explanatory content for broader audiences and presentation settings.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading with-icon">
+        <div class="heading-icon gray">
+          <LinkOutlined />
+        </div>
+        <div>
+          <p class="section-kicker">References</p>
+          <h2>Citations, References & Project Links</h2>
+        </div>
+      </div>
+
+      <div class="two-col-grid">
+        <div class="info-block">
+          <div class="block-label">
+            <LinkOutlined />
+            <span>Project Links</span>
+          </div>
+          <ul class="link-list">
+            <li>
+              <strong>Source Code:</strong>
+              <a href="https://github.com/yyqxdlg/riskLens/tree/main" target="_blank" rel="noopener noreferrer">
+                https://github.com/yyqxdlg/riskLens/tree/main
+              </a>
+            </li>
+            <li>
+              <strong>Used Data:</strong>
+              <a href="https://wwwn.cdc.gov/nchs/nhanes/default.aspx" target="_blank" rel="noopener noreferrer">
+                https://wwwn.cdc.gov/nchs/nhanes/default.aspx
+              </a>
+            </li>
+            <li>
+              <strong>Live Website / Demo Link:</strong>
+              <a href="https://yyqxdlg.github.io/riskLens/" target="_blank" rel="noopener noreferrer">
+                https://yyqxdlg.github.io/riskLens/
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="info-block">
+          <div class="block-label">
+            <BookOutlined />
+            <span>References</span>
+          </div>
+          <ul class="link-list">
+            <li>Centers for Disease Control and Prevention. National Health and Nutrition Examination Survey (NHANES).</li>
+            <li>CDC guidance on body mass index (BMI) interpretation and related health categories.</li>
+            <li>2017 ACC/AHA guideline references for systolic blood pressure categorization.</li>
+            <li>Public-health and classroom references used for cholesterol and educational risk categorization.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer-note">
+      RiskLens is an educational visualization project built for course use. For medical decisions, please consult a licensed healthcare professional.
     </footer>
   </div>
 </template>
 
-<style scoped>
-/* 核心颜色变量 */
-.risklens-intro-container {
-  --primary-purple: #722ed1;
-  --success-green: #52c41a;
-  --warning-gold: #faad14;
-  --error-red: #ff4d4f;
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --bg-light: #f8fafc;
-  --border-color: #e2e8f0;
+<script setup>
+import {
+  InfoCircleOutlined,
+  BulbOutlined,
+  TeamOutlined,
+  DatabaseOutlined,
+  NodeIndexOutlined,
+  BarChartOutlined,
+  MessageOutlined,
+  RocketOutlined,
+  LinkOutlined,
+  BookOutlined,
+  ProfileOutlined,
+  AimOutlined,
+  ApartmentOutlined,
+  FileSearchOutlined,
+  SearchOutlined,
+  FundOutlined,
+  SyncOutlined
+} from '@ant-design/icons-vue'
+</script>
 
-  max-width: 1000px;
+<style scoped>
+.about-page {
+  --primary: #722ed1;
+  --primary-soft: rgba(114, 46, 209, 0.08);
+  --text-main: #0f172a;
+  --text-sub: #475569;
+  --border: #e2e8f0;
+  --bg-soft: #f8fafc;
+  --success: #52c41a;
+  --warning: #faad14;
+  --risk: #ff7a45;
+  --critical: #ff4d4f;
+
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 36px 20px 56px;
+  color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
+}
+
+.hero-card,
+.section-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+.hero-card {
+  padding: 32px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #faf7ff 100%);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(114, 46, 209, 0.1);
+  color: var(--primary);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.hero-card h1 {
+  margin: 0 0 14px;
+  font-size: 34px;
+  font-weight: 800;
   color: var(--text-main);
 }
 
-/* Hero Section */
-.hero-section { text-align: center; margin-bottom: 50px; }
-.pulse-container { display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-.pulse-icon {
-  width: 12px; height: 12px; background: var(--success-green); border-radius: 50%;
-  margin-right: 15px; box-shadow: 0 0 0 rgba(82, 196, 26, 0.4);
-  animation: pulse 2s infinite;
-}
-.main-title { font-size: 28px; font-weight: 800; color: #003a8c; margin: 0; text-transform: uppercase; }
-.hero-subtitle { font-size: 16px; color: var(--text-muted); max-width: 600px; margin: 10px auto; }
-
-/* Info Sections */
-.info-section { margin-bottom: 50px; }
-.section-label { 
-  font-size: 13px; color: var(--primary-purple); font-weight: 800; 
-  text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px; 
-  display: block; border-left: 4px solid var(--primary-purple); padding-left: 12px;
+.hero-copy,
+.hero-note,
+.section-copy {
+  color: var(--text-sub);
+  line-height: 1.78;
+  font-size: 15px;
 }
 
-/* Feature Cards */
-.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-.feature-card { 
-  background: #fff; padding: 20px; border-radius: 12px; 
-  border: 1px solid var(--border-color); 
+.hero-note {
+  margin-top: 12px;
 }
-.feature-card h3 { font-size: 16px; font-weight: 700; color: #003a8c; margin-bottom: 8px; }
-.feature-card p { font-size: 13px; color: var(--text-muted); margin: 0; }
 
-/* Table Cards */
-.data-source-note { 
-  background: var(--bg-light); padding: 12px; border-radius: 8px; 
-  border-left: 4px solid #003a8c; margin-bottom: 20px; font-size: 13px; 
+.section-card {
+  padding: 26px;
+  margin-bottom: 22px;
 }
-.logic-card { 
-  background: #fff; border: 1px solid var(--border-color); 
-  border-radius: 12px; overflow: hidden; 
+
+.section-heading {
+  margin-bottom: 18px;
 }
-.card-header { background: #fafafa; padding: 10px 20px; border-bottom: 1px solid var(--border-color); }
-.card-header h3 { font-size: 14px; font-weight: 700; margin: 0; }
 
-.logic-table { width: 100%; border-collapse: collapse; text-align: left; }
-.logic-table th { background: #fdfdfd; padding: 12px 20px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
-.logic-table td { padding: 12px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: top; }
-.dim-name { font-weight: 700; color: #003a8c; }
+.with-icon {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-/* Tags & Badges */
-.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #f1f5f9; font-size: 10px; font-weight: 700; margin: 2px; }
-.tag.green { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
-.tag.yellow { background: #fffbe6; color: #d48806; border: 1px solid #ffe58f; }
-.tag.orange { background: #fff7e6; color: #d46b08; border: 1px solid #ffd591; }
-.tag.red { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; }
-.tag.dark-red { background: #430302; color: #fff; }
+.heading-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
 
-.badge { padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 10px; display: inline-block; }
-.healthy { background: #f6ffed; color: var(--success-green); border: 1px solid #b7eb8f; }
-.warning { background: #fffbe6; color: var(--warning-gold); border: 1px solid #ffe58f; }
-.critical { background: #fff1f0; color: var(--error-red); border: 1px solid #ffa39e; }
-.normal { background: #f9f0ff; color: var(--primary-purple); border: 1px solid #d3adf7; }
-.score-tag { font-family: monospace; font-weight: 800; }
+.heading-icon.purple {
+  background: rgba(114, 46, 209, 0.12);
+  color: #722ed1;
+}
 
-/* Intro Footer */
-.intro-footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 12px; }
+.heading-icon.blue {
+  background: rgba(24, 144, 255, 0.12);
+  color: #1677ff;
+}
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(82, 196, 26, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0); }
+.heading-icon.teal {
+  background: rgba(19, 194, 194, 0.12);
+  color: #08979c;
+}
+
+.heading-icon.orange {
+  background: rgba(250, 140, 22, 0.12);
+  color: #d46b08;
+}
+
+.heading-icon.red {
+  background: rgba(255, 77, 79, 0.12);
+  color: #cf1322;
+}
+
+.heading-icon.gold {
+  background: rgba(250, 173, 20, 0.14);
+  color: #d48806;
+}
+
+.heading-icon.green {
+  background: rgba(82, 196, 26, 0.12);
+  color: #389e0d;
+}
+
+.heading-icon.gray {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+}
+
+.section-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.overview-grid,
+.team-grid,
+.task-grid,
+.two-col-grid,
+.future-grid,
+.feedback-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.overview-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.team-grid,
+.two-col-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.task-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.future-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.feedback-grid {
+  grid-template-columns: 1fr;
+}
+
+.mini-card,
+.team-card,
+.task-card,
+.info-block,
+.future-card,
+.feedback-card {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.mini-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.mini-icon,
+.task-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(114, 46, 209, 0.09);
+  color: #722ed1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.mini-card h3,
+.team-card h3,
+.task-card h3,
+.info-block h3,
+.future-card h3,
+.feedback-card h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: var(--text-main);
+}
+
+.mini-card p,
+.task-card p,
+.info-block li,
+.team-card li,
+.link-list li,
+.future-card p,
+.feedback-card p {
+  color: var(--text-sub);
+  line-height: 1.75;
+}
+
+.team-card ul,
+.info-block ul,
+.link-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.member-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.member-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #722ed1 0%, #9254de 100%);
+}
+
+.member-avatar.alt {
+  background: linear-gradient(135deg, #1677ff 0%, #69b1ff 100%);
+}
+
+.workload {
+  margin: 0;
+  font-weight: 700;
+  color: #003a8c;
+}
+
+.block-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 12px;
+  margin-bottom: 14px;
+  color: #334155;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.detail-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.logic-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #fff;
+  margin-top: 18px;
+}
+
+.card-header {
+  padding: 14px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.logic-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.logic-table th,
+.logic-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.logic-table th {
+  background: #fcfcff;
+  color: #475569;
+  font-weight: 800;
+}
+
+.dim-name {
+  font-weight: 800;
+  color: #003a8c;
+}
+
+.badge,
+.score-tag {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.badge.healthy {
+  color: #389e0d;
+  background: rgba(82, 196, 26, 0.12);
+  border: 1px solid rgba(82, 196, 26, 0.35);
+}
+
+.badge.normal {
+  color: #722ed1;
+  background: rgba(114, 46, 209, 0.1);
+  border: 1px solid rgba(114, 46, 209, 0.25);
+}
+
+.badge.warning {
+  color: #d48806;
+  background: rgba(250, 173, 20, 0.14);
+  border: 1px solid rgba(250, 173, 20, 0.35);
+}
+
+.badge.risk {
+  color: #d9480f;
+  background: rgba(255, 122, 69, 0.14);
+  border: 1px solid rgba(255, 122, 69, 0.35);
+}
+
+.badge.critical {
+  color: #cf1322;
+  background: rgba(255, 77, 79, 0.12);
+  border: 1px solid rgba(255, 77, 79, 0.35);
+}
+
+.score-tag {
+  color: #0f172a;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+}
+
+.low-text {
+  color: #389e0d;
+}
+
+.mid-text {
+  color: #d48806;
+}
+
+.high-text {
+  color: #cf1322;
+}
+
+.feedback-card {
+  border-left: 4px solid #722ed1;
+  background: linear-gradient(180deg, #ffffff 0%, #faf7ff 100%);
+}
+
+.feedback-card p {
+  margin: 8px 0 0;
+}
+
+.link-list a {
+  color: #2563eb;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.link-list a:hover {
+  text-decoration: underline;
+}
+
+.footer-note {
+  text-align: center;
+  color: #64748b;
+  margin-top: 26px;
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+@media (max-width: 960px) {
+  .overview-grid,
+  .task-grid,
+  .team-grid,
+  .two-col-grid,
+  .future-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-card h1 {
+    font-size: 28px;
+  }
+
+  .section-heading h2 {
+    font-size: 22px;
+  }
 }
 </style>

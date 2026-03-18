@@ -24,67 +24,115 @@ npm run lint
 See [Configuration Reference](https://cli.vuejs.org/config/).
 
 
-1. Age (Range: 18–80)
-Age is categorized to reflect different stages of cardiovascular risk development, focusing on the clinical "40+" intervention threshold.
+# RiskLens
 
-Young Adult (18–39): Baseline risk group.
+RiskLens is an interactive educational visualization website for exploring cardiovascular-related health factors.  
+It allows users to enter personal health metrics, review a heuristic clinical profile score, compare themselves with the overall and filtered population, and inspect how metric changes affect the resulting profile.
 
-Middle-Aged (40–59): The critical window for lifestyle intervention and early screening.
+## Live Website
 
-Senior (60–74): High-risk group requiring consistent monitoring.
+https://yyqxdlg.github.io/riskLens/
 
-Elderly (75–80): Very high-risk group due to physiological aging.
+## Source Code
 
-2. Body Mass Index / BMI (Range: 14.9–68.9)
-Categorized according to CDC (Centers for Disease Control and Prevention) standards.
+https://github.com/yyqxdlg/riskLens/tree/main
 
-Underweight: < 18.5
+## Demo Video
 
-Healthy: 18.5–24.9
+The final 2-minute demo video will be linked or embedded in the website's Demo page.
 
-Overweight: 25.0–29.9
+## Main Features
 
-Obese I: 30.0–34.9
+- Personal clinical profile scoring based on five core metrics
+- Radar-based comparison between user input and population benchmarks
+- Subgroup comparison and peer filtering
+- Built-in BMI calculator
+- Risk simulator / “time machine” exploration
+- Summary panel for quick interpretation of the user profile
 
-Severe Obesity: ≥ 35.0 (Covers the dataset's upper limit of 68.9).
+## Team Members & Workload Distribution
 
-3. Blood Pressure / Systolic (Range: 70–215 mmHg)
-Categorized based on the 2017 AHA/ACC (American Heart Association) guidelines.
+### YUZHANG — 50%
+- Literature review and background research
+- Raw data download, cleaning, and preprocessing
+- Project planning and design
+- Implementation of the summary part, radar part, and risk simulator
+- Bug fixing, testing, and About-page documentation
 
-Low: < 90
+### LIUZIFEI — 50%
+- Literature review and background research
+- Project planning and design
+- Implementation of onboarding, range comparison, and user form modules
+- UI refinement and layout optimization
+- Bug fixing and testing
 
-Normal: 90–119
+## Data Abstraction
 
-Elevated: 120–129
+The project abstracts NHANES participant records into a set of user-facing health attributes:
 
-Stage 1: 130–139
+- Age
+- BMI
+- Systolic blood pressure
+- Total cholesterol
+- Diabetes status
 
-Stage 2: 140–179
+These variables are further transformed into derived categories such as:
 
-Crisis: ≥ 180 (The most critical risk level).
+- Age group
+- BMI category
+- Blood pressure category
+- Cholesterol category
+- Diabetes diagnosis status
 
-4. Blood Lipids / Total Cholesterol (Range: 62–438 mg/dL)
-Categorized based on the NIH/ATP III (National Institutes of Health) standards.
+The system then computes:
 
-Desirable: < 200
+- Metric-level scores
+- An overall profile score
+- A heuristic risk category
+- Subgroup comparison summaries
+- Simulation outputs
 
-Borderline: 200–239
+## Data Provenance
 
-High: 240–399
+RiskLens uses publicly available data from the CDC’s National Health and Nutrition Examination Survey (NHANES).
 
-Extreme: ≥ 400 (Typically indicates familial risk).
+Data source:
+https://wwwn.cdc.gov/nchs/nhanes/default.aspx
 
-5. Diabetes Status
-Categorized as a binary classification for cardiovascular risk attribution.
+Multiple NHANES survey-cycle files were downloaded, cleaned, merged, and transformed into the fields used in the interface.  
+This project is an educational visualization and not a medical diagnosis system.
 
-Non-Diabetic (0): No clinical diagnosis of diabetes.
+## Task Abstraction
 
-Diabetic (1): Clinically diagnosed; considered a major CVD risk factor.
+RiskLens supports the following user tasks:
 
-6. CVD Status
-Categorized as a binary classification for cardiovascular .
+1. **Identify** personal health status from entered clinical metrics
+2. **Compare** personal values against the overall population and filtered peer groups
+3. **Inspect** how each metric contributes to the overall profile score
+4. **Simulate** how changing values may alter the resulting risk-related profile
 
-Non-CVD (0): No clinical diagnosis of CVD.
+## Feedback Incorporation
 
-CVD (1): Clinically diagnosed.
+The final website incorporates presentation feedback in several ways:
+
+- Added a built-in BMI calculator
+- Improved click-based subgroup interaction in the range comparison view
+- Refined diabetes-related labels for better clarity
+- Adjusted chart presentation and spacing in subgroup comparison views
+- Strengthened the connection between user input and population comparison
+
+## Clinical References
+
+This educational scoring system and categorization design were informed by public-health references and course discussion, including:
+
+- CDC / NHANES
+- CDC BMI-related guidance
+- ACC/AHA blood pressure guideline references
+- Public-health references for cholesterol categorization
+
+## Project Setup
+
+```bash
+npm install
+npm run serve
 
