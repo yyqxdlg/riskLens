@@ -36,6 +36,21 @@
       </aside>
 
       <div class="chart-panel">
+        <div class="zoom-rail" aria-label="Zoom controls">
+          <button
+            v-for="(dim, index) in chartDimensions"
+            :key="`zoom-${dim.key}`"
+            type="button"
+            class="zoom-chip"
+            :class="{ active: focusedDimKey === dim.key }"
+            :style="getZoomChipStyle(index)"
+            :aria-label="focusedDimKey === dim.key ? `Collapse ${dim.label} focus view` : `Expand ${dim.label} focus view`"
+            :title="focusedDimKey === dim.key ? `Collapse ${dim.label} focus view` : `Expand ${dim.label} focus view`"
+            @click="toggleFocusedDim(dim.key)"
+          >
+            {{ focusedDimKey === dim.key ? '-' : '+' }}
+          </button>
+        </div>
         <div ref="chartRef" class="range-chart" />
         <div v-if="isBusy" class="chart-loading">
           <span class="loading-heart" aria-hidden="true">
@@ -201,6 +216,7 @@ const activeOpacity = 0.96
 
 const chartRef = ref(null)
 let chart = null
+const focusedDimKey = ref('')
 
 const createFilterMap = () => ({
   ageGroup: [],
@@ -822,6 +838,14 @@ const buildRowDataForDim = (dim) => {
       focusMaxSelectedShare < 1 ? 0.1 : focusMaxSelectedShare < 5 ? 0.5 : 1
     )
   )
+  const focusAxisMax = Math.max(
+    focusMaxSelectedShare < 1 ? 0.28 : focusMaxSelectedShare < 5 ? 1.1 : 2,
+    roundUp(
+      focusMaxSelectedShare * 1.08,
+      focusMaxSelectedShare < 1 ? 0.1 : focusMaxSelectedShare < 5 ? 0.25 : 0.5
+    )
+  )
+  const focusImpactAxisMax = Math.max(1.15, roundUp(maxLift * 1.04, 0.25))
 
   return {
     categories,
@@ -829,7 +853,9 @@ const buildRowDataForDim = (dim) => {
     labelByIndex,
     axisMax: baseAxisMax,
     zoomAxisMax: Math.min(baseAxisMax, zoomAxisMax),
+    focusAxisMax,
     impactAxisMax: Math.max(1.5, roundUp(maxLift * 1.16, 0.5)),
+    focusImpactAxisMax,
     rowTotal
   }
 }
@@ -884,11 +910,9 @@ const parseSeriesId = (seriesId = '') => {
   return { dimKey, metric }
 }
 
-const buildMarkerOverlaySeries = (dimKey, rowIndex, markerIndex, bars, inImpactMode = false) => {
+const buildMarkerOverlaySeries = (dimKey, rowIndex, markerIndex, bars, axisMax) => {
   const axisCategory = normalizeMarkerAxisCategory(markerIndex, bars)
-  const rowMax = inImpactMode
-    ? (rowDataByDim.value[dimKey]?.impactAxisMax || 1)
-    : ((rowDataByDim.value[dimKey]?.zoomAxisMax || rowDataByDim.value[dimKey]?.axisMax || 1))
+  const rowMax = axisMax || (rowDataByDim.value[dimKey]?.zoomAxisMax || rowDataByDim.value[dimKey]?.axisMax || 1)
   const markerData = (bars || []).map((bar, index) => {
     if (bar?.isGap) return 0
     return axisCategory !== null && index === axisCategory ? rowMax : 0
@@ -921,32 +945,41 @@ const buildTotalData = (dimKey, options = {}) => {
   const hasBarSelected = selectedBarIds.size > 0
   const zoomed = !!options.zoomed
   const zoomStrength = Number(options.zoomStrength) || 1
+  const deemphasized = !!options.deemphasized
+  const focused = !!options.focused
   const baseOpacity = zoomed
     ? Math.min(0.8, 0.56 + (zoomStrength - 1) * 0.12)
     : 0.54
   return bars.map(bar => {
     if (bar.isGap) return { value: 0, itemStyle: { color: 'rgba(0,0,0,0)' } }
+    const idleOpacity = deemphasized
+      ? 0.12
+      : (focused ? Math.min(0.94, baseOpacity + 0.16) : baseOpacity)
+    const selectedOpacity = deemphasized ? 0.28 : 0.82
+    const unselectedOpacity = deemphasized ? 0.06 : 0.12
     return {
       value: bar.allShareAll || 0,
       itemStyle: {
         color: totalGradient,
         borderRadius: [0, 0, 0, 0],
-        opacity: hasBarSelected ? (selectedBarIds.has(bar.id) ? 0.82 : 0.12) : baseOpacity,
+        opacity: hasBarSelected ? (selectedBarIds.has(bar.id) ? selectedOpacity : unselectedOpacity) : idleOpacity,
         borderWidth: 0,
-        shadowBlur: hasBarSelected && selectedBarIds.has(bar.id) ? 10 : 0,
+        shadowBlur: !deemphasized && hasBarSelected && selectedBarIds.has(bar.id) ? 10 : 0,
         shadowColor: 'rgba(37,99,235,0.18)'
       }
     }
   })
 }
 
-const buildRiskData = (dimKey, metric) => {
+const buildRiskData = (dimKey, metric, options = {}) => {
   const bars = rowDataByDim.value[dimKey]?.bars || []
   const selected = new Set(normalizeSelection(dimKey, selectedByDim.value[dimKey] || []))
   const selectedBarIds = new Set(selectedBarIdsByDim.value[dimKey] || [])
   const hasSelected = selected.size > 0
   const hasBarSelected = selectedBarIds.size > 0
   const color = metric === 'noCvd' ? noCvdGradient : cvdGradient
+  const deemphasized = !!options.deemphasized
+  const focused = !!options.focused
 
   return bars.map(bar => {
     if (bar.isGap) return { value: 0, itemStyle: { color: 'rgba(0,0,0,0)' } }
@@ -957,22 +990,24 @@ const buildRiskData = (dimKey, metric) => {
     const subgroupShare = Number(bar.groupShareAll) || 0
     const shouldLabelNoCvd = metric === 'noCvd' && subgroupShare > 0 && Number(bar.selectedCvdShareAll || 0) <= 0
     const shouldLabelCvd = metric === 'cvd' && subgroupShare > 0
+    const emphasisOpacity = deemphasized ? 0.34 : (focused ? 1 : activeOpacity)
+    const mutedSeriesOpacity = deemphasized ? 0.08 : mutedOpacity
     return {
       value: metric === 'noCvd' ? bar.selectedNoCvdShareAll : bar.selectedCvdShareAll,
       label: {
-        show: (shouldLabelNoCvd || shouldLabelCvd),
+        show: !deemphasized && (shouldLabelNoCvd || shouldLabelCvd),
         position: 'top',
         distance: 4,
         color: enabled ? '#1e3a8a' : '#64748b',
-        fontSize: 9.5,
+        fontSize: focused ? 10.5 : 9.5,
         fontWeight: 700,
         formatter: smartPercentLabel(subgroupShare)
       },
       itemStyle: {
         color,
-        opacity: enabled ? activeOpacity : mutedOpacity,
+        opacity: enabled ? emphasisOpacity : mutedSeriesOpacity,
         borderWidth: 0,
-        shadowBlur: enabled && hasBarSelected ? 10 : 0,
+        shadowBlur: !deemphasized && enabled && hasBarSelected ? 10 : 0,
         shadowColor: metric === 'noCvd' ? 'rgba(29,78,216,0.35)' : 'rgba(194,65,12,0.35)',
         borderRadius: [0, 0, 0, 0]
       }
@@ -989,12 +1024,14 @@ const impactHigherGradient = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
   { offset: 1, color: '#ea580c' }
 ])
 
-const buildImpactData = (dimKey) => {
+const buildImpactData = (dimKey, options = {}) => {
   const bars = rowDataByDim.value[dimKey]?.bars || []
   const selected = new Set(normalizeSelection(dimKey, selectedByDim.value[dimKey] || []))
   const selectedBarIds = new Set(selectedBarIdsByDim.value[dimKey] || [])
   const hasSelected = selected.size > 0
   const hasBarSelected = selectedBarIds.size > 0
+  const deemphasized = !!options.deemphasized
+  const focused = !!options.focused
 
   return bars.map((bar) => {
     if (bar.isGap) return { value: 0, itemStyle: { color: 'rgba(0,0,0,0)' } }
@@ -1003,14 +1040,16 @@ const buildImpactData = (dimKey) => {
       ? selectedBarIds.has(bar.id)
       : (!hasSelected || selected.has(bar.category))
     const liftValue = Number(bar.riskLift) || 0
+    const emphasisOpacity = deemphasized ? 0.32 : (focused ? 1 : activeOpacity)
+    const mutedSeriesOpacity = deemphasized ? 0.08 : mutedOpacity
 
     return {
       value: liftValue,
       itemStyle: {
         color: liftValue > 1 ? impactHigherGradient : impactLowerGradient,
-        opacity: enabled ? activeOpacity : mutedOpacity,
+        opacity: enabled ? emphasisOpacity : mutedSeriesOpacity,
         borderWidth: 0,
-        shadowBlur: enabled && hasBarSelected ? 10 : 0,
+        shadowBlur: !deemphasized && enabled && hasBarSelected ? 10 : 0,
         shadowColor: liftValue > 1 ? 'rgba(194,65,12,0.28)' : 'rgba(29,78,216,0.28)',
         borderRadius: [0, 0, 0, 0]
       }
@@ -1255,6 +1294,12 @@ const buildOption = () => {
   const rowHeight = CHART_ROW_HEIGHT
   const rowGap = CHART_ROW_GAP
   const topOffset = CHART_TOP_OFFSET
+  const chartWidth = chartRef.value?.clientWidth || 760
+  const compactChart = chartWidth < 820
+  const controlRailWidth = compactChart ? 56 : 64
+  const focusedDim = focusedDimKey.value
+  const rowLayouts = getRowLayouts()
+  const rowLayoutMap = new Map(rowLayouts.map(layout => [layout.key, layout]))
 
   const grids = []
   const xAxis = []
@@ -1263,15 +1308,33 @@ const buildOption = () => {
 
   chartDimensions.forEach((dim, rowIndex) => {
     const row = rowDataByDim.value[dim.key] || { bars: [], labelByIndex: {}, axisMax: 10, zoomAxisMax: 10, impactAxisMax: 2 }
+    const rowLayout = rowLayoutMap.get(dim.key) || {
+      top: topOffset + rowIndex * (rowHeight + rowGap),
+      height: rowHeight,
+      focused: false,
+      compressed: false
+    }
     const markerIndex = resolveUserMarkerIndex(dim.key, row)
     const selectedSet = new Set(normalizeSelection(dim.key, selectedByDim.value[dim.key] || []))
     const rowHasLocalSelection = (selectedByDim.value[dim.key] || []).length > 0 || (selectedBarIdsByDim.value[dim.key] || []).length > 0
-    const shouldZoomCompositionAxis = viewMode.value === 'composition' && (hasSubgroupFilter.value || rowHasLocalSelection)
-    const compositionAxisMax = shouldZoomCompositionAxis ? row.zoomAxisMax : row.axisMax
+    const isFocusedRow = rowLayout.focused
+    const isCompressedRow = rowLayout.compressed
+    const isDeemphasizedRow = !!focusedDim && !isFocusedRow
+    const shouldZoomCompositionAxis = viewMode.value === 'composition' && (
+      isFocusedRow || (!focusedDim && (hasSubgroupFilter.value || rowHasLocalSelection))
+    )
+    const compositionAxisMax = isFocusedRow
+      ? (row.focusAxisMax || row.zoomAxisMax || row.axisMax)
+      : (shouldZoomCompositionAxis ? row.zoomAxisMax : row.axisMax)
+    const impactAxisMax = isFocusedRow
+      ? (row.focusImpactAxisMax || row.impactAxisMax)
+      : row.impactAxisMax
+    const currentAxisMax = viewMode.value === 'impact' ? impactAxisMax : compositionAxisMax
     const zoomStrength = shouldZoomCompositionAxis && row.zoomAxisMax > 0
       ? Math.max(1, row.axisMax / row.zoomAxisMax)
       : 1
     const barCount = row.bars.length
+    const lowDensity = barCount <= 6
     const barSize = barCount > 90
       ? 4
       : barCount > 70
@@ -1281,31 +1344,41 @@ const buildOption = () => {
           : barCount > 36
             ? 9
             : barCount > 24
-              ? 12
+              ? 11
               : barCount > 16
-                ? 15
+                ? 14
                 : barCount > 10
-                  ? 20
-                  : 30
+                  ? 18
+                  : compactChart
+                    ? 24
+                    : 28
     const barCategoryGap = barCount > 32
-      ? '28%'
+      ? '34%'
       : barCount > 20
-        ? '18%'
+        ? '28%'
         : barCount > 12
-          ? '12%'
-          : '8%'
+          ? '16%'
+          : compactChart
+            ? '14%'
+            : '10%'
+    const backgroundBarMaxWidth = lowDensity
+      ? (compactChart ? 44 : 54)
+      : 42
+    const foregroundBarMaxWidth = lowDensity
+      ? (compactChart ? 34 : 42)
+      : 32
     const backgroundBarWidth = shouldZoomCompositionAxis
-      ? Math.min(46, Math.round(barSize * Math.min(1.45, 1 + (zoomStrength - 1) * 0.18)))
-      : barSize
+      ? Math.min(backgroundBarMaxWidth, Math.round(barSize * Math.min(1.38, 1 + (zoomStrength - 1) * 0.16)))
+      : Math.min(backgroundBarMaxWidth, Math.round(barSize * (lowDensity ? 1.45 : 1.16)))
     const foregroundBarWidth = shouldZoomCompositionAxis
-      ? Math.max(5, Math.round(backgroundBarWidth * 0.72))
-      : Math.max(5, Math.round(barSize * 0.72))
+      ? Math.min(foregroundBarMaxWidth, Math.max(8, Math.round(backgroundBarWidth * (lowDensity ? 0.82 : 0.74))))
+      : Math.min(foregroundBarMaxWidth, Math.max(8, Math.round(backgroundBarWidth * (lowDensity ? 0.8 : 0.72))))
 
     grids.push({
-      left: 96,
-      right: 10,
-      top: topOffset + rowIndex * (rowHeight + rowGap),
-      height: rowHeight
+      left: 92,
+      right: controlRailWidth,
+      top: rowLayout.top,
+      height: rowLayout.height
     })
 
     xAxis.push({
@@ -1313,14 +1386,18 @@ const buildOption = () => {
       gridIndex: rowIndex,
       data: row.bars.map((_, i) => String(i)),
       axisTick: { show: false },
-      axisLine: { lineStyle: { color: 'rgba(71,85,105,0.28)' } },
+      axisLine: {
+        show: !isCompressedRow,
+        lineStyle: { color: isFocusedRow ? 'rgba(37,99,235,0.42)' : 'rgba(71,85,105,0.28)' }
+      },
       axisLabel: {
+        show: !isCompressedRow,
         interval: 0,
-        margin: dim.key === 'ageGroup' ? 10 : 7,
-        fontSize: 9,
+        margin: dim.key === 'ageGroup' ? 12 : 9,
+        fontSize: isFocusedRow ? 10 : 9,
         fontWeight: 700,
         hideOverlap: true,
-        color: '#475569',
+        color: isFocusedRow ? '#1d4ed8' : '#475569',
         formatter: (_, idx) => {
           const label = row.labelByIndex[idx] || ''
           if (!label) return ''
@@ -1341,10 +1418,10 @@ const buildOption = () => {
             borderRadius: 4,
             borderWidth: 1,
             borderColor: 'rgba(148,163,184,0.18)',
-            padding: [1, 6, 1, 6],
-            fontSize: 9.5,
+            padding: [1, 5, 1, 5],
+            fontSize: 9,
             fontWeight: 700,
-            lineHeight: 16
+            lineHeight: 15
           },
           tagActive: {
             color: '#0f172a',
@@ -1352,23 +1429,23 @@ const buildOption = () => {
             borderRadius: 4,
             borderWidth: 1,
             borderColor: 'rgba(37,99,235,0.55)',
-            padding: [1, 6, 1, 6],
-            fontSize: 9.5,
+            padding: [1, 5, 1, 5],
+            fontSize: 9,
             fontWeight: 700,
-            lineHeight: 16
+            lineHeight: 15
           },
           range: {
             color: '#94a3b8',
-            fontSize: 8.5,
+            fontSize: 8,
             fontWeight: 600,
-            lineHeight: 12,
+            lineHeight: 11,
             padding: [1, 0, 0, 0]
           },
           rangeActive: {
             color: '#2563eb',
-            fontSize: 8.5,
+            fontSize: 8,
             fontWeight: 700,
-            lineHeight: 12,
+            lineHeight: 11,
             padding: [1, 0, 0, 0]
           }
         }
@@ -1379,28 +1456,29 @@ const buildOption = () => {
       type: 'value',
       gridIndex: rowIndex,
       min: 0,
-      max: viewMode.value === 'impact' ? row.impactAxisMax : compositionAxisMax,
+      max: currentAxisMax,
       splitNumber: 2,
       name: dim.label,
       nameLocation: 'middle',
       nameGap: 48,
       nameRotate: 0,
       nameTextStyle: {
-        fontSize: 11,
+        fontSize: isFocusedRow ? 12 : 11,
         fontWeight: 700,
-        color: '#334155'
+        color: isFocusedRow ? '#1d4ed8' : (isCompressedRow ? '#94a3b8' : '#334155')
       },
       axisLabel: {
-        show: true,
+        show: !isCompressedRow,
         color: '#667085',
-        fontSize: 9,
+        fontSize: isFocusedRow ? 10 : 9,
         formatter: (v) => {
           return viewMode.value === 'impact' ? `${Number(v).toFixed(1)}x` : smartPercentLabel(v)
         }
       },
       splitLine: {
+        show: !focusedDim || isFocusedRow,
         lineStyle: {
-          color: 'rgba(15,23,42,0.09)',
+          color: isFocusedRow ? 'rgba(37,99,235,0.16)' : 'rgba(15,23,42,0.09)',
           type: 'solid'
         }
       }
@@ -1414,13 +1492,13 @@ const buildOption = () => {
         xAxisIndex: rowIndex,
         yAxisIndex: rowIndex,
         barWidth: barSize,
-        barMaxWidth: 32,
+        barMaxWidth: foregroundBarMaxWidth,
         barCategoryGap,
-        data: buildImpactData(dim.key),
-        markArea: buildSelectionMarkArea(dim.key, row.impactAxisMax),
+        data: buildImpactData(dim.key, { deemphasized: isDeemphasizedRow, focused: isFocusedRow }),
+        markArea: buildSelectionMarkArea(dim.key, impactAxisMax),
         z: 3
       })
-      series.push(buildMarkerOverlaySeries(dim.key, rowIndex, markerIndex, row.bars, true))
+      series.push(buildMarkerOverlaySeries(dim.key, rowIndex, markerIndex, row.bars, impactAxisMax))
     } else {
       series.push({
         id: makeSeriesId(dim.key, 'total'),
@@ -1429,10 +1507,15 @@ const buildOption = () => {
         xAxisIndex: rowIndex,
         yAxisIndex: rowIndex,
         barWidth: backgroundBarWidth,
-        barMaxWidth: 42,
+        barMaxWidth: backgroundBarMaxWidth,
         barCategoryGap,
         barGap: '-100%',
-        data: buildTotalData(dim.key, { zoomed: shouldZoomCompositionAxis, zoomStrength }),
+        data: buildTotalData(dim.key, {
+          zoomed: shouldZoomCompositionAxis,
+          zoomStrength,
+          deemphasized: isDeemphasizedRow,
+          focused: isFocusedRow
+        }),
         markArea: buildSelectionMarkArea(dim.key, compositionAxisMax),
         markLine: { symbol: ['none', 'none'], silent: true, data: [] },
         z: 1
@@ -1446,9 +1529,9 @@ const buildOption = () => {
         yAxisIndex: rowIndex,
         stack: `risk-${dim.key}`,
         barWidth: foregroundBarWidth,
-        barMaxWidth: 32,
+        barMaxWidth: foregroundBarMaxWidth,
         barCategoryGap,
-        data: buildRiskData(dim.key, 'noCvd'),
+        data: buildRiskData(dim.key, 'noCvd', { deemphasized: isDeemphasizedRow, focused: isFocusedRow }),
         z: 3
       })
 
@@ -1460,12 +1543,12 @@ const buildOption = () => {
         yAxisIndex: rowIndex,
         stack: `risk-${dim.key}`,
         barWidth: foregroundBarWidth,
-        barMaxWidth: 32,
+        barMaxWidth: foregroundBarMaxWidth,
         barCategoryGap,
-        data: buildRiskData(dim.key, 'cvd'),
+        data: buildRiskData(dim.key, 'cvd', { deemphasized: isDeemphasizedRow, focused: isFocusedRow }),
         z: 4
       })
-      series.push(buildMarkerOverlaySeries(dim.key, rowIndex, markerIndex, row.bars, false))
+      series.push(buildMarkerOverlaySeries(dim.key, rowIndex, markerIndex, row.bars, compositionAxisMax))
 
     }
   })
@@ -1579,13 +1662,26 @@ const renderUserMarkersOnly = () => {
   const series = chartDimensions.map((dim) => {
     const row = rowDataByDim.value[dim.key] || { bars: [] }
     const markerIndex = resolveUserMarkerIndex(dim.key, row)
+    const rowHasLocalSelection = (selectedByDim.value[dim.key] || []).length > 0 || (selectedBarIdsByDim.value[dim.key] || []).length > 0
+    const shouldZoomCompositionAxis = viewMode.value === 'composition' && (
+      focusedDimKey.value === dim.key || (!focusedDimKey.value && (hasSubgroupFilter.value || rowHasLocalSelection))
+    )
     return {
       id: makeSeriesId(dim.key, 'marker'),
       data: (() => {
         const axisCategory = normalizeMarkerAxisCategory(markerIndex, row.bars || [])
+        const axisMax = viewMode.value === 'impact'
+          ? (focusedDimKey.value === dim.key
+            ? (rowDataByDim.value[dim.key]?.focusImpactAxisMax || rowDataByDim.value[dim.key]?.impactAxisMax || 1)
+            : (rowDataByDim.value[dim.key]?.impactAxisMax || 1))
+          : (focusedDimKey.value === dim.key
+            ? (rowDataByDim.value[dim.key]?.focusAxisMax || rowDataByDim.value[dim.key]?.zoomAxisMax || rowDataByDim.value[dim.key]?.axisMax || 1)
+            : (shouldZoomCompositionAxis
+              ? (rowDataByDim.value[dim.key]?.zoomAxisMax || rowDataByDim.value[dim.key]?.axisMax || 1)
+              : (rowDataByDim.value[dim.key]?.axisMax || 1)))
         const rowMax = viewMode.value === 'impact'
-          ? (rowDataByDim.value[dim.key]?.impactAxisMax || 1)
-          : ((rowDataByDim.value[dim.key]?.zoomAxisMax || rowDataByDim.value[dim.key]?.axisMax || 1))
+          ? axisMax
+          : axisMax
         return (row.bars || []).map((bar, index) => {
           if (bar?.isGap) return 0
           return axisCategory !== null && index === axisCategory ? rowMax : 0
@@ -1628,19 +1724,96 @@ const clearLeftSelection = () => {
   emitExactSelection()
 }
 
-const CHART_ROW_HEIGHT = 36
-const CHART_ROW_GAP = 38
-const CHART_TOP_OFFSET = 42
-const CHART_BOTTOM_PADDING = 50
+const toggleFocusedDim = (dimKey) => {
+  focusedDimKey.value = focusedDimKey.value === dimKey ? '' : dimKey
+  applyChartHeight()
+  chart?.resize()
+  renderChart()
+}
 
-const getRequiredChartHeight = () => {
-  const n = chartDimensions.length
-  return CHART_TOP_OFFSET + n * CHART_ROW_HEIGHT + (n - 1) * CHART_ROW_GAP + CHART_BOTTOM_PADDING
+const CHART_ROW_HEIGHT = 38
+const CHART_ROW_GAP = 40
+const CHART_TOP_OFFSET = 42
+const CHART_BOTTOM_PADDING = 54
+const DEFAULT_CHART_HEIGHT = CHART_TOP_OFFSET
+  + chartDimensions.length * CHART_ROW_HEIGHT
+  + (chartDimensions.length - 1) * CHART_ROW_GAP
+  + CHART_BOTTOM_PADDING
+
+const getChartViewportHeight = () => {
+  const parentHeight = chartRef.value?.parentElement?.clientHeight || 0
+  const ownHeight = chartRef.value?.clientHeight || 0
+  return Math.max(parentHeight, ownHeight, DEFAULT_CHART_HEIGHT)
+}
+
+const getRowLayouts = () => {
+  const focusedDim = focusedDimKey.value
+  const rowCount = chartDimensions.length
+  const contentHeight = Math.max(
+    rowCount * CHART_ROW_HEIGHT + (rowCount - 1) * CHART_ROW_GAP,
+    getChartViewportHeight() - CHART_TOP_OFFSET - CHART_BOTTOM_PADDING
+  )
+  let top = CHART_TOP_OFFSET
+
+  if (!focusedDim) {
+    const baseRowHeight = CHART_ROW_HEIGHT
+    const gap = rowCount > 1
+      ? (contentHeight - rowCount * baseRowHeight) / (rowCount - 1)
+      : 0
+
+    return chartDimensions.map((dim, index) => {
+      const height = baseRowHeight
+      const center = top + (height / 2)
+      const layout = { key: dim.key, top, height, center, focused: false, compressed: false }
+      top += height + (index === chartDimensions.length - 1 ? 0 : gap)
+      return layout
+    })
+  }
+
+  const compressedCount = Math.max(0, rowCount - 1)
+  let gap = rowCount > 1 ? Math.max(10, Math.round(contentHeight * 0.028)) : 0
+  let focusHeight = Math.round(contentHeight * 0.58)
+  let compressedHeight = compressedCount > 0
+    ? Math.floor((contentHeight - focusHeight - gap * (rowCount - 1)) / compressedCount)
+    : contentHeight
+
+  if (compressedHeight < 24 && compressedCount > 0) {
+    gap = Math.max(8, Math.floor((contentHeight - focusHeight - 24 * compressedCount) / (rowCount - 1)))
+    compressedHeight = Math.floor((contentHeight - focusHeight - gap * (rowCount - 1)) / compressedCount)
+  }
+
+  if (compressedHeight < 20 && compressedCount > 0) {
+    compressedHeight = 20
+    focusHeight = contentHeight - compressedHeight * compressedCount - gap * (rowCount - 1)
+  }
+
+  focusHeight = Math.max(112, focusHeight)
+
+  return chartDimensions.map((dim, index) => {
+    const focused = !!focusedDim && focusedDim === dim.key
+    const compressed = !!focusedDim && focusedDim !== dim.key
+    const height = focused
+      ? focusHeight
+      : compressed
+        ? compressedHeight
+        : CHART_ROW_HEIGHT
+    const center = top + (height / 2)
+    const layout = { key: dim.key, top, height, center, focused, compressed }
+    top += height + (index === chartDimensions.length - 1 ? 0 : gap)
+    return layout
+  })
+}
+
+const getZoomChipStyle = (index) => {
+  const layout = getRowLayouts()[index]
+  return {
+    top: `${layout?.center || CHART_TOP_OFFSET}px`
+  }
 }
 
 const applyChartHeight = () => {
   if (!chartRef.value) return
-  chartRef.value.style.height = `${getRequiredChartHeight()}px`
+  chartRef.value.style.height = `${getChartViewportHeight()}px`
 }
 
 const initChart = async () => {
@@ -1672,6 +1845,7 @@ const initChart = async () => {
 const handleResize = () => {
   applyChartHeight()
   chart?.resize()
+  renderChart()
 }
 
 onMounted(async () => {
@@ -1800,13 +1974,13 @@ const userInteractedDims = ref(new Set())
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: clamp(216px, 22vw, 248px) minmax(0, 1fr);
   gap: 12px;
   align-items: stretch;
 }
 
 .guidance-section {
-  padding: 12px 12px 10px;
+  padding: 10px 10px 9px;
   background: #f8fbff;
   border: 1px solid #e6effb;
   border-radius: 12px;
@@ -1818,7 +1992,7 @@ const userInteractedDims = ref(new Set())
   line-height: 1.55;
   color: #262626;
   background: #fff;
-  padding: 10px 12px;
+  padding: 10px 11px;
   border-radius: 8px;
   border-left: 4px solid #1890ff;
 }
@@ -1924,6 +2098,47 @@ const userInteractedDims = ref(new Set())
   min-width: 0;
   min-height: 0;
   background: transparent;
+}
+
+.zoom-rail {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 48px;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.zoom-chip {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(96, 165, 250, 0.34);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  color: #475569;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.zoom-chip:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.16);
+}
+
+.zoom-chip.active {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: rgba(29, 78, 216, 0.72);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
 }
 
 .range-chart {
@@ -2093,6 +2308,17 @@ const userInteractedDims = ref(new Set())
 
   .guide-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .zoom-rail {
+    width: 42px;
+  }
+
+  .zoom-chip {
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    font-size: 15px;
   }
 }
 

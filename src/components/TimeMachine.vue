@@ -1,6 +1,13 @@
 <template>
   <div>
-    <a-modal v-model:open="open" width="700px"  style="top: 20px" :footer="null" @cancel="closeModal" :bodyStyle="bodyStyle">
+    <a-modal
+      v-model:open="open"
+      width="min(860px, calc(100vw - 32px))"
+      style="top: 20px"
+      :footer="null"
+      @cancel="closeModal"
+      :bodyStyle="modalBodyStyle"
+    >
       <template #title>
         
         <div class="custom-title"><BulbTwoTone style="padding-right: 3px;" /> Time Machine: Risk Trajectory Simulator</div>
@@ -41,7 +48,7 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, nextTick, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, nextTick, ref, watch } from 'vue';
 import * as echarts from 'echarts';
 import {BulbTwoTone} from '@ant-design/icons-vue'
 const props = defineProps({
@@ -53,6 +60,7 @@ const emit = defineEmits(["colseTimeModal"]);
 const open = ref(false);
 const timeMachine = ref(null);
 let myChart = null;
+const simulationData = ref([]);
 
 // 响应式统计数据
 const stats = ref({ totalN: 0, startRate: 0, endRate: 0 });
@@ -142,28 +150,59 @@ const runSimulation = (inputAge, currentFilters, allData) => {
 
   return result
 }
+const ensureChart = () => {
+  if (!timeMachine.value) return null;
+  if (!myChart) {
+    myChart = echarts.init(timeMachine.value);
+  }
+  return myChart;
+};
+
+const getChartLayout = (pointCount) => {
+  const containerWidth = timeMachine.value?.clientWidth || 700;
+  const compact = containerWidth < 680;
+  const sparse = pointCount <= 4;
+  const mediumSparse = pointCount > 4 && pointCount <= 6;
+  const dense = pointCount > 8;
+  const rotateLabels = compact || pointCount > 9;
+  const inset = sparse ? (compact ? 14 : 24) : mediumSparse ? (compact ? 8 : 14) : 0;
+
+  return {
+    barWidth: sparse ? (compact ? 40 : 56) : mediumSparse ? (compact ? 32 : 44) : undefined,
+    barMaxWidth: sparse ? (compact ? 40 : 56) : mediumSparse ? (compact ? 32 : 44) : (compact ? 18 : dense ? 20 : 24),
+    barCategoryGap: sparse ? '8%' : mediumSparse ? '16%' : pointCount > 10 ? '34%' : pointCount > 7 ? '44%' : '56%',
+    labelRotate: rotateLabels ? (containerWidth < 620 ? 38 : 24) : 0,
+    labelMargin: rotateLabels ? 16 : 12,
+    labelFontSize: compact ? 10 : 11,
+    legendItemGap: compact ? 12 : 18,
+    gridLeft: (compact ? 54 : 62) + inset,
+    gridRight: (compact ? 16 : 24) + inset,
+    gridTop: 60,
+    gridBottom: rotateLabels ? 86 : 60,
+    lineWidth: compact ? 3 : 4,
+    symbolSize: compact ? 7 : 9,
+    markPointSize: compact ? 52 : 60
+  };
+};
+
 const renderChart = (data) => {
-  if (!timeMachine.value) return;
+  const chart = ensureChart();
+  if (!chart) return;
 
   // 1. 如果没有数据，清空图表并更新提示，防止 ECharts 找不到坐标轴报错
   if (!data || data.length === 0) {
-    if (myChart) myChart.clear();
+    chart.clear();
     stats.value = { totalN: 0, startRate: 0, endRate: 0 };
     summaryText.value = { en: 'No matching data found.', cn: '未找到匹配的同类数据。' };
     return;
   }
-
-  // 2. 销毁旧实例并重新初始化，确保容器尺寸和坐标轴重置
-  if (myChart) {
-    myChart.dispose();
-  }
-  myChart = echarts.init(timeMachine.value);
 
   // --- Mastery 核心逻辑：捕捉真实峰值 (Peak Risk) ---
   const rates = data.map(d => Number(d.rate));
   const maxRate = Math.max(...rates); // 寻找整个序列中的最高风险点
   const maxIndex = rates.indexOf(maxRate);
   const peakLabel = data[maxIndex].label;
+  const layout = getChartLayout(data.length);
 
   // 更新 UI 统计数据
   stats.value.totalN = data.reduce((a, b) => a + b.cvd + b.healthy, 0);
@@ -181,37 +220,65 @@ const renderChart = (data) => {
   // 3. 构建 ECharts 配置 (恢复原配色)
   const option = {
     tooltip: { 
-      trigger: 'axis', 
-      axisPointer: { type: 'shadow' } 
+      trigger: 'axis',
+      confine: true,
+      backgroundColor: 'rgba(15, 23, 42, 0.92)',
+      borderColor: 'rgba(148, 163, 184, 0.28)',
+      borderWidth: 1,
+      textStyle: { color: '#e2e8f0', fontSize: 11 },
+      padding: [8, 10],
+      axisPointer: {
+        type: 'shadow',
+        shadowStyle: { color: 'rgba(96, 165, 250, 0.10)' }
+      }
     },
     legend: { 
-      data: ['Healthy', 'CVD', 'Risk Trend'], 
-      bottom: 5,
-      textStyle: { fontSize: 10 }
+      data: ['Healthy', 'CVD', 'Risk Trend'],
+      top: 4,
+      left: 'center',
+      itemWidth: 12,
+      itemHeight: 8,
+      itemGap: layout.legendItemGap,
+      textStyle: { fontSize: layout.labelFontSize, color: '#475569' }
     },
     grid: { 
-      top: '15%', 
-      left: '8%', 
-      right: '8%', 
-      bottom: '15%', 
-      containLabel: true 
+      top: layout.gridTop,
+      left: layout.gridLeft,
+      right: layout.gridRight,
+      bottom: layout.gridBottom,
+      containLabel: true
     },
     xAxis: { 
-      type: 'category', 
+      type: 'category',
       data: data.map(d => d.label),
-      axisTick: { alignWithLabel: true }
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.5)' } },
+      axisLabel: {
+        interval: 0,
+        rotate: layout.labelRotate,
+        margin: layout.labelMargin,
+        hideOverlap: layout.labelRotate === 0,
+        fontSize: layout.labelFontSize,
+        color: '#475569'
+      }
     },
     yAxis: [
       { 
-        type: 'value', 
-        name: 'Population', 
-        splitLine: { lineStyle: { type: 'dashed' } } 
+        type: 'value',
+        name: 'Population',
+        nameTextStyle: { fontSize: 11, color: '#64748b', padding: [0, 0, 0, 4] },
+        axisLabel: { fontSize: layout.labelFontSize, color: '#64748b' },
+        splitNumber: 4,
+        splitLine: {
+          lineStyle: { color: 'rgba(148, 163, 184, 0.22)', type: 'dashed' }
+        }
       },
       { 
-        type: 'value', 
-        name: 'Risk %', 
-        max: 100, 
-        axisLabel: { formatter: '{value}%' },
+        type: 'value',
+        name: 'Risk %',
+        max: 100,
+        nameTextStyle: { fontSize: 11, color: '#64748b', padding: [0, 0, 0, 4] },
+        axisLabel: { formatter: '{value}%', fontSize: layout.labelFontSize, color: '#64748b' },
         splitLine: { show: false } 
       }
     ],
@@ -220,52 +287,82 @@ const renderChart = (data) => {
         name: 'Healthy',
         type: 'bar',
         stack: 'total',
-        itemStyle: { color: '#1890ff' }, // 蓝色
+        barWidth: layout.barWidth,
+        barMaxWidth: layout.barMaxWidth,
+        barCategoryGap: layout.barCategoryGap,
+        itemStyle: { color: '#60a5fa' },
+        emphasis: { focus: 'series' },
         data: data.map(d => d.healthy)
       },
       {
         name: 'CVD',
         type: 'bar',
         stack: 'total',
-        itemStyle: { color: '#ff4d4f' }, // 红色
+        barWidth: layout.barWidth,
+        barMaxWidth: layout.barMaxWidth,
+        barCategoryGap: layout.barCategoryGap,
+        itemStyle: { color: '#fb7185', borderRadius: [6, 6, 0, 0] },
+        emphasis: { focus: 'series' },
         data: data.map(d => d.cvd)
       },
       {
         name: 'Risk Trend',
         type: 'line',
-        yAxisIndex: 1, // 使用右侧 Y 轴
-        smooth: true,
-        lineStyle: { width: 4, color: '#722ed1' }, // 紫色
-        itemStyle: { color: '#722ed1', borderWidth: 2 },
+        yAxisIndex: 1,
+        smooth: 0.35,
+        symbol: 'circle',
+        symbolSize: layout.symbolSize,
+        lineStyle: { width: layout.lineWidth, color: '#7c3aed' },
+        itemStyle: { color: '#7c3aed', borderWidth: 2 },
         // 在峰值点增加自动标注
         markPoint: {
-          data: [{ type: 'max', name: 'Peak', label: { formatter: '{c}%', color: '#fff' } }],
-          symbolSize: 60,
-          itemStyle: { color: '#722ed1' }
+          data: [{ type: 'max', name: 'Peak', label: { formatter: '{c}%', color: '#fff', fontSize: layout.labelFontSize } }],
+          symbol: 'circle',
+          symbolSize: layout.markPointSize,
+          itemStyle: { color: '#7c3aed' }
         },
-        data: data.map(d => d.rate)
+        data: data.map(d => Number(d.rate))
       }
     ]
   };
 
-  myChart.setOption(option);
+  chart.resize();
+  chart.setOption(option, { notMerge: true });
 };
-const bodyStyle = {
-  'overflow-y': 'auto',
-  'height': '500px',
-}
+const handleResize = () => {
+  if (!myChart) return;
+  if (open.value) {
+    renderChart(simulationData.value);
+    return;
+  }
+  myChart.resize();
+};
+
+const modalBodyStyle = {
+  overflowY: 'auto',
+  maxHeight: 'min(78vh, 560px)'
+};
 // 监听与同步
 watch(() => props.modalState, async (newVal) => {
   open.value = !!newVal?.open;
-  console.log(props,'rrrrrr')
   if (open.value) {
     await nextTick();
     const data = runSimulation(newVal.userAge, newVal.otherInfo, props.rawGroupData);
-    renderChart(data);
+    simulationData.value = data;
+    requestAnimationFrame(() => {
+      renderChart(data);
+    });
   }
 }, { deep: true, immediate: true });
 
-onBeforeUnmount(() => myChart?.dispose());
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+  myChart?.dispose();
+});
 </script>
 
 <style scoped>
@@ -338,8 +435,23 @@ onBeforeUnmount(() => myChart?.dispose());
 .text-blue { color: #1890ff; }
 .text-purple { color: #722ed1; }
 
-.chart-container { height: 420px; width: 100%; }
+.chart-container { height: 440px; width: 100%; }
 .footer-hint { margin-top: 20px; text-align: center; color: #bfbfbf; font-size: 11px; }
+
+@media (max-width: 640px) {
+  .guidance-section {
+    padding: 16px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .chart-container {
+    height: 380px;
+  }
+}
 
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7); }

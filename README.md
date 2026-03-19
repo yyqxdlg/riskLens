@@ -25,7 +25,7 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 
 # RiskLens
 
-RiskLens is an interactive educational visualization website for exploring cardiovascular-related health factors.  
+RiskLens is an interactive visualization website for exploring cardiovascular-related health factors.  
 It allows users to enter personal health metrics, review a heuristic clinical profile score, compare themselves with the overall and filtered population, and inspect how metric changes affect the resulting profile.
 
 ## Project Overview
@@ -33,7 +33,7 @@ It allows users to enter personal health metrics, review a heuristic clinical pr
 RiskLens is designed as a course project for clinical risk sensemaking and health-data visualization.  
 The website supports user input, subgroup comparison, heuristic profile scoring, and risk simulation through an integrated visual interface.
 
-This project is intended for educational visualization purposes only and does not provide medical advice or clinical diagnosis.
+This project is intended for visualization purposes only and does not provide medical advice or clinical diagnosis.
 
 ## Website Structure
 
