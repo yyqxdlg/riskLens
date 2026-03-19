@@ -74,7 +74,7 @@ The website includes a dedicated Demo page for project presentation and walkthro
 - Implementation of the summary view
 - Implementation of the radar comparison view
 - Implementation of the risk simulator
-- Bug fixing, testing, and About-page documentation
+- Bug fixing and testing
 
 ### ZIFEI LIU — 50%
 - Literature review and background research

@@ -32,7 +32,7 @@
             </div>
 
             <div class="member-meta">
-              <h3>YU  ZHANG</h3>
+              <h3>YU ZHANG</h3>
               <p class="member-role">Research, Data Processing, Summary / Radar / Simulator</p>
               <span class="workload-tag">Workload: 50%</span>
             </div>
@@ -71,7 +71,7 @@
           <div class="member-top">
             <div class="photo-frame">
               <!-- 替换成你们自己的照片路径 -->
-              <img src="@/assets/member-liuzifei.jpg" alt="LIUZIFEI photo" class="member-photo" />
+              <img src="@/assets/member-liuzifei.jpg" alt="ZIFEI LIU photo" class="member-photo" />
             </div>
 
             <div class="member-meta">
