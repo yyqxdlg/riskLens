@@ -7,12 +7,12 @@
       </div>
       <h1>RiskLens: Clinical Risk Sensemaking</h1>
       <p class="hero-copy">
-        RiskLens is an interactive educational visualization website for exploring cardiovascular-related health factors.
+        RiskLens is an interactive   visualization website for exploring cardiovascular-related health factors.
         Users can enter their own clinical measurements, review a heuristic profile score, compare themselves with the
         overall and filtered population, and inspect how changes in metrics affect the resulting profile.
       </p>
       <p class="hero-note">
-        This project is designed for educational data visualization purposes and does not provide medical advice or clinical diagnosis.
+        This project is designed for   data visualization purposes and does not provide medical advice or clinical diagnosis.
       </p>
     </section>
 
@@ -46,7 +46,7 @@
           <div class="mini-icon"><RocketOutlined /></div>
           <h3>Risk Simulation</h3>
           <p>
-            Explore how changes across life stages and metric values may affect the resulting educational risk profile.
+            Explore how changes across life stages and metric values may affect the resulting   risk profile.
           </p>
         </div>
       </div>
@@ -68,7 +68,7 @@
           <div class="member-top">
             <div class="member-avatar">YZ</div>
             <div>
-              <h3>YUZHANG</h3>
+              <h3>YU ZHANG</h3>
               <p class="workload">Workload: 50%</p>
             </div>
           </div>
@@ -77,7 +77,7 @@
             <li>Raw data download, cleaning, and preprocessing</li>
             <li>Project planning and design</li>
             <li>Implementation of the summary view, radar view, and risk simulator</li>
-            <li>Bug fixing, testing, and About-page documentation</li>
+            <li>Bug fixing, testing</li>
           </ul>
         </div>
 
@@ -85,7 +85,7 @@
           <div class="member-top">
             <div class="member-avatar alt">LZ</div>
             <div>
-              <h3>LIUZIFEI</h3>
+              <h3>ZIFEI LIU</h3>
               <p class="workload">Workload: 50%</p>
             </div>
           </div>
@@ -155,7 +155,7 @@
               Multiple NHANES survey-cycle files were downloaded, cleaned, merged, and transformed into the fields used by the interface.
             </li>
             <li>
-              Thresholds shown in the system were adapted from public-health references and class discussion for educational visualization purposes.
+              Thresholds shown in the system were adapted from public-health references and class discussion for   visualization purposes.
             </li>
             <li>
               The website is intended as an interpretive classroom visualization rather than a medical prediction system.
@@ -175,30 +175,94 @@
         </div>
         <div>
           <p class="section-kicker">Tasks</p>
-          <h2>Task Abstraction</h2>
+          <h2>Task Abstraction & Distribution</h2>
         </div>
       </div>
 
-      <div class="task-grid">
-        <div class="task-card">
-          <div class="task-icon"><SearchOutlined /></div>
-          <h3>Identify</h3>
-          <p>Identify personal health status from entered clinical metrics.</p>
+      <div class="task-version-block">
+        <div class="task-version-head">
+          <h3>Overall Version</h3>
+          <p>The Overall task summary focuses on the core interactions implemented in the current system.</p>
         </div>
-        <div class="task-card">
-          <div class="task-icon"><BarChartOutlined /></div>
-          <h3>Compare</h3>
-          <p>Compare personal values against the overall population and filtered peer groups.</p>
+        <div class="task-grid">
+          <div class="task-card">
+            <div class="task-icon"><SearchOutlined /></div>
+            <h3>Identify</h3>
+            <p>Identify personal health status from entered clinical metrics.</p>
+          </div>
+          <div class="task-card">
+            <div class="task-icon"><BarChartOutlined /></div>
+            <h3>Compare</h3>
+            <p>Compare personal values against the overall population and filtered peer groups.</p>
+          </div>
+          <div class="task-card">
+            <div class="task-icon"><FundOutlined /></div>
+            <h3>Inspect</h3>
+            <p>Inspect how each metric contributes to the overall clinical profile score.</p>
+          </div>
+          <div class="task-card">
+            <div class="task-icon"><SyncOutlined /></div>
+            <h3>Simulate</h3>
+            <p>Simulate how metric changes may alter the resulting profile over time.</p>
+          </div>
         </div>
-        <div class="task-card">
-          <div class="task-icon"><FundOutlined /></div>
-          <h3>Inspect</h3>
-          <p>Inspect how each metric contributes to the overall clinical profile score.</p>
+      </div>
+
+      <div class="task-version-block alt">
+        <div class="task-version-head">
+          <h3>Munzner-style Version</h3>
+          <p>This version rewrites the system tasks using a why–what–how task abstraction structure.</p>
         </div>
-        <div class="task-card">
-          <div class="task-icon"><SyncOutlined /></div>
-          <h3>Simulate</h3>
-          <p>Simulate how metric changes may alter the resulting profile over time.</p>
+        <div class="task-scheme-grid">
+          <div class="scheme-card">
+            <h4>Why</h4>
+            <ul class="detail-list compact">
+              <li>Discover how a user’s measurements relate to broader cardiovascular-risk patterns.</li>
+              <li>Compare the user with the overall cohort and filtered peer subgroups.</li>
+              <li>Explore how changed measurements may shift the   risk profile over time.</li>
+            </ul>
+          </div>
+          <div class="scheme-card">
+            <h4>What</h4>
+            <ul class="detail-list compact">
+              <li>Person-level attributes: age, BMI, systolic blood pressure, cholesterol, and diabetes status.</li>
+              <li>Derived categories, subgroup summaries, heuristic scores, and risk labels.</li>
+              <li>Relations between the user, the overall population, and selected subgroups.</li>
+            </ul>
+          </div>
+          <div class="scheme-card">
+            <h4>How</h4>
+            <ul class="detail-list compact">
+              <li>Onboarding and direct form input collect the user profile.</li>
+              <li>Summary, radar, and range views support comparison, filtering, and subgroup selection.</li>
+              <li>The time-machine view supports what-if exploration across life stages and metric changes.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="task-version-block">
+        <div class="task-version-head">
+          <h3>User Task Version</h3>
+          <p>This version presents the tasks from the user’s perspective and matches the current workflow more directly.</p>
+        </div>
+        <div class="task-user-grid">
+          <div class="task-user-card">
+            <h4>Enter and confirm my profile</h4>
+            <p>Provide age, BMI, blood pressure, cholesterol, and diabetes information through onboarding or the form, then confirm the profile used for analysis.</p>
+          </div>
+          <div class="task-user-card">
+            <h4>See where I fit</h4>
+            <p>Understand where my values fall relative to the cohort through summary cards, radar comparison, and dashed markers in the aligned range view.</p>
+          </div>
+          <div class="task-user-card">
+            <h4>Filter and compare subgroups</h4>
+            <p>Click categories in the range comparison view, refine subgroup filters, and inspect how selected peers differ from the full population.</p>
+          </div>
+          <div class="task-user-card">
+            <h4>Test what-if changes</h4>
+            <p>Use the simulator and time-machine view to see how changing measurements or life stage may alter the   risk profile.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -215,7 +279,7 @@
       </div>
 
       <p class="section-copy">
-        The following score table is a heuristic educational summary used to support comparison and interpretation in the visualization.
+        The following score table is a heuristic   summary used to support comparison and interpretation in the visualization.
         It is not intended as a clinical diagnosis or formal medical risk model.
       </p>
 
@@ -308,7 +372,7 @@
               <tr>
                 <td><strong class="high-text">HIGH RISK</strong></td>
                 <td><span class="score-tag">&lt; 0</span></td>
-                <td>Multiple risk-related deviations in the educational scoring summary.</td>
+                <td>Multiple risk-related deviations in the   scoring summary.</td>
               </tr>
             </tbody>
           </table>
@@ -330,16 +394,16 @@
       <div class="feedback-grid">
         <div class="feedback-card">
           <h3>Clarifying diabetes labels</h3>
-          <p><strong>Feedback:</strong> The abbreviation “DM” was unclear and could be interpreted ambiguously.</p>
-          <p><strong>Response:</strong> We replaced or refined diabetes-related labels across the interface with clearer wording.</p>
-          <p><strong>Design reasoning:</strong> The dataset does not explicitly distinguish diabetes type, so we prioritized clarity without overstating unavailable information.</p>
+          <p><strong>Feedback:</strong> Users asked whether the diabetes field referred to Type 1 or Type 2 diabetes.</p>
+          <p><strong>Response:</strong> We present diabetes as a binary status only and avoid implying a more specific subtype classification.</p>
+          <p><strong>Design reasoning:</strong> The dataset only records whether the participant has diabetes, not a reliable Type 1 / Type 2 distinction, so the interface should stay at the level supported by the data.</p>
         </div>
 
         <div class="feedback-card">
-          <h3>Showing where the user fits in the population</h3>
-          <p><strong>Feedback:</strong> It was not immediately clear how users could understand where they fit within the broader population.</p>
-          <p><strong>Response:</strong> We strengthened summary interpretation, peer comparison views, and filtered subgroup analysis to make comparison more explicit.</p>
-          <p><strong>Design reasoning:</strong> Instead of relying on a single ranking number, we used multiple coordinated comparison views to support interpretation from different angles.</p>
+          <h3>Reduce input friction during onboarding</h3>
+          <p><strong>Feedback:</strong> Entering every value at once felt heavy, especially for first-time visitors who may only know part of their measurements.</p>
+          <p><strong>Response:</strong> We kept the step-by-step onboarding flow and skip behavior so users can enter known values gradually before reviewing the dashboard.</p>
+          <p><strong>Design reasoning:</strong> Progressive input lowers cognitive load while still allowing confirm to convert entered values into the final subgroup filters.</p>
         </div>
 
         <div class="feedback-card">
@@ -350,17 +414,24 @@
         </div>
 
         <div class="feedback-card">
-          <h3>Bar-chart spacing and visual density</h3>
-          <p><strong>Feedback:</strong> Some grouped bar displays looked visually separated or compressed.</p>
-          <p><strong>Response:</strong> We refined layout behavior, chart spacing, and presentation in subgroup comparison views.</p>
-          <p><strong>Design reasoning:</strong> Different dimensions naturally contain different numbers of categories, so the final layout balances consistency and readability rather than forcing identical density everywhere.</p>
+          <h3>Aligned subgroup bars across dimensions</h3>
+          <p><strong>Feedback:</strong> The range comparison rows were harder to scan when dimensions had different category counts and bar positions shifted from row to row.</p>
+          <p><strong>Response:</strong> We aligned all bars to the same slot structure, using the maximum number of categories and leaving unused slots empty on the right.</p>
+          <p><strong>Design reasoning:</strong> This preserves consistent horizontal positions across age, BMI, blood pressure, cholesterol, and diabetes while still acknowledging that some dimensions have fewer categories.</p>
         </div>
 
         <div class="feedback-card">
-          <h3>Click-based subgroup interaction</h3>
-          <p><strong>Feedback:</strong> Users suggested direct click interaction instead of manually deselecting multiple dimensions.</p>
-          <p><strong>Response:</strong> We improved click-based interaction in the comparison view to make subgroup exploration more direct.</p>
-          <p><strong>Design reasoning:</strong> This reduces unnecessary interaction steps and improves exploratory efficiency.</p>
+          <h3>Show the user’s confirmed position more clearly</h3>
+          <p><strong>Feedback:</strong> Users wanted a clearer cue for where their confirmed values land inside the subgroup comparison view.</p>
+          <p><strong>Response:</strong> We added a centered dashed marker line that appears only for dimensions with an actual confirmed user input.</p>
+          <p><strong>Design reasoning:</strong> This highlights the user’s current location without inventing defaults or showing misleading markers when no value was entered.</p>
+        </div>
+
+        <div class="feedback-card">
+          <h3>Clarify confirm versus manual subgroup selection</h3>
+          <p><strong>Feedback:</strong> Users needed chart clicking for free exploration, but also expected Confirm to fully reset the filters to match only the inputs they provided.</p>
+          <p><strong>Response:</strong> We separated the two behaviors: chart clicks support exploratory subgroup selection, while Confirm overwrites filters using the entered inputs and clears dimensions that were left blank.</p>
+          <p><strong>Design reasoning:</strong> This keeps casual exploration flexible but makes the confirmed profile deterministic and easier to understand.</p>
         </div>
       </div>
     </section>
@@ -452,14 +523,13 @@
             <li>Centers for Disease Control and Prevention. National Health and Nutrition Examination Survey (NHANES).</li>
             <li>CDC guidance on body mass index (BMI) interpretation and related health categories.</li>
             <li>2017 ACC/AHA guideline references for systolic blood pressure categorization.</li>
-            <li>Public-health and classroom references used for cholesterol and educational risk categorization.</li>
           </ul>
         </div>
       </div>
     </section>
 
     <footer class="footer-note">
-      RiskLens is an educational visualization project built for course use. For medical decisions, please consult a licensed healthcare professional.
+      RiskLens is an   visualization project built for course use. For medical decisions, please consult a licensed healthcare professional.
     </footer>
   </div>
 </template>
@@ -717,6 +787,73 @@ import {
   line-height: 1.75;
 }
 
+.task-version-block {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  background: #fff;
+}
+
+.task-version-block + .task-version-block {
+  margin-top: 18px;
+}
+
+.task-version-block.alt {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfaff 100%);
+}
+
+.task-version-head {
+  margin-bottom: 16px;
+}
+
+.task-version-head h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.task-version-head p {
+  margin: 0;
+  color: var(--text-sub);
+  line-height: 1.65;
+}
+
+.task-scheme-grid,
+.task-user-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.task-user-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scheme-card,
+.task-user-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  background: #fff;
+}
+
+.scheme-card h4,
+.task-user-card h4 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.task-user-card p {
+  margin: 0;
+  color: var(--text-sub);
+  line-height: 1.65;
+}
+
+.detail-list.compact li {
+  margin-bottom: 10px;
+}
+
 .team-card ul,
 .info-block ul,
 .link-list {
@@ -910,7 +1047,9 @@ import {
   .task-grid,
   .team-grid,
   .two-col-grid,
-  .future-grid {
+  .future-grid,
+  .task-scheme-grid,
+  .task-user-grid {
     grid-template-columns: 1fr;
   }
 

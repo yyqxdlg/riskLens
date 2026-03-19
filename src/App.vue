@@ -91,6 +91,7 @@
               :userInputs="userInputs"
               :clearSignal="rangeClearSignal"
               :clearRequest="clearFilterRequest"
+              :confirmSyncSignal="confirmSyncSignal"
               @updateFilters="onRangeFiltersUpdate"
               @updateSelection="onRangeSelectionUpdate"
             />
@@ -207,8 +208,8 @@ import DemoPart from './components/DemoPart.vue';
   const processArray = ref(null)
 
   const dedupe = (arr = []) => [...new Set(arr)];
-  const isFilterMapEmpty = (filters = {}) =>
-    !Object.values(filters).some((arr) => Array.isArray(arr) && arr.length > 0)
+  // const isFilterMapEmpty = (filters = {}) =>
+    // !Object.values(filters).some((arr) => Array.isArray(arr) && arr.length > 0)
 
   const mergeFiltersByIntersection = (fromRange = [], fromForm = []) => {
     const left = dedupe(fromRange);
@@ -259,28 +260,45 @@ import DemoPart from './components/DemoPart.vue';
     rangeSelectedRowIds.value = Array.isArray(rowIds) ? rowIds : null;
   };
 
-  const onFormFiltersUpdate = (val) => {
-    const nextForm = { ...formFilters.value, ...val };
-    const nextRange = { ...rangeFilters.value };
-    const shouldClearRangeAll = isFilterMapEmpty(nextForm)
+  // const onFormFiltersUpdate = (val) => {
+  //   const nextForm = { ...formFilters.value, ...val };
+  //   const nextRange = { ...rangeFilters.value };
+  //   const shouldClearRangeAll = isFilterMapEmpty(nextForm)
 
-    if (shouldClearRangeAll) {
-      Object.assign(nextRange, emptyFilterMap())
-      rangeSelectedRowIds.value = null
-      rangeClearSignal.value += 1
-    } else {
-      Object.keys(nextForm).forEach((key) => {
-        if ((nextForm[key] || []).length > 0) {
-          nextRange[key] = []
-        }
-      });
-    }
+  //   if (shouldClearRangeAll) {
+  //     Object.assign(nextRange, emptyFilterMap())
+  //     rangeSelectedRowIds.value = null
+  //     rangeClearSignal.value += 1
+  //   } else {
+  //     Object.keys(nextForm).forEach((key) => {
+  //       if ((nextForm[key] || []).length > 0) {
+  //         nextRange[key] = []
+  //       }
+  //     });
+  //   }
 
-    formFilters.value = nextForm;
-    rangeFilters.value = nextRange;
-    rebuildActiveFilters();
-  };
+  //   formFilters.value = nextForm;
+  //   rangeFilters.value = nextRange;
+  //   rebuildActiveFilters();
+  // };
+const normalizeFilterMap = (src = {}) => ({
+  ageGroup: Array.isArray(src.ageGroup) ? src.ageGroup : [],
+  bmiGroup: Array.isArray(src.bmiGroup) ? src.bmiGroup : [],
+  bpGroup: Array.isArray(src.bpGroup) ? src.bpGroup : [],
+  lipidGroup: Array.isArray(src.lipidGroup) ? src.lipidGroup : [],
+  diabetesLabel: Array.isArray(src.diabetesLabel) ? src.diabetesLabel : []
+})
 
+const onFormFiltersUpdate = (val) => {
+  const nextForm = normalizeFilterMap(val)
+
+  formFilters.value = nextForm
+  rangeFilters.value = emptyFilterMap()
+  rangeSelectedRowIds.value = null
+
+  confirmSyncSignal.value += 1
+  rebuildActiveFilters()
+}
   const onUserInputsUpdate = (val) => {
     userInputs.value = { ...userInputs.value, ...val };
   };
@@ -637,6 +655,8 @@ const selectedCVDCount = computed(() => {
   }
 ) ;
 const selectedHealthyCount = computed(() => processArray.value ?(processArray.value?.selectedNoCVD || []).length : 0);
+
+const confirmSyncSignal = ref(0)
 
 </script>
 
@@ -1085,7 +1105,7 @@ const selectedHealthyCount = computed(() => processArray.value ?(processArray.va
 
 .rangePart {
   width: 100%;
-  height: 560px;
+  height: 570px;
   min-height: 560px;
   padding: 8px 8px 6px;
 }

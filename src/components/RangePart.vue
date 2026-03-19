@@ -113,7 +113,11 @@ const props = defineProps({
       key: '',
       value: ''
     })
-  }
+  },
+  confirmSyncSignal: {
+    type: Number,
+    default: 0
+  },
 })
 
 const emit = defineEmits(['updateFilters', 'updateSelection'])
@@ -134,6 +138,10 @@ const groupOrder = {
   lipidGroup: ['Desirable', 'Borderline', 'High', 'Extreme'],
   diabetesLabel: ['Non-Diabetic', 'Diabetic']
 }
+
+const MAX_CATEGORY_SLOTS = Math.max(
+  ...Object.values(groupOrder).map(categories => categories.length)
+)
 
 const shortLabelMap = {
   'Young Adult': 'Young',
@@ -757,6 +765,20 @@ const buildRowDataForDim = (dim) => {
     labelByIndex[bars.length - 1] = buildDisplayLabel(dim.key, category)
   })
 
+  while (bars.length < MAX_CATEGORY_SLOTS) {
+    bars.push({
+      id: `${dim.key}|__gap__|${bars.length}`,
+      category: null,
+      isGap: true,
+      allTotal: 0,
+      total: 0,
+      cvd: 0,
+      noCvd: 0,
+      minRaw: null,
+      maxRaw: null
+    })
+  }
+
   const rowTotal = bars.reduce((acc, bar) => acc + (bar.isGap ? 0 : bar.total), 0)
   const allPopulation = globalPopulationTotal.value
   const allCvd = globalCvdTotal.value
@@ -912,28 +934,41 @@ const parseSeriesId = (seriesId = '') => {
 
 const buildMarkerOverlaySeries = (dimKey, rowIndex, markerIndex, bars, axisMax) => {
   const axisCategory = normalizeMarkerAxisCategory(markerIndex, bars)
-  const rowMax = axisMax || (rowDataByDim.value[dimKey]?.zoomAxisMax || rowDataByDim.value[dimKey]?.axisMax || 1)
-  const markerData = (bars || []).map((bar, index) => {
-    if (bar?.isGap) return 0
-    return axisCategory !== null && index === axisCategory ? rowMax : 0
-  })
+  const rowMax = Number(axisMax) || 1
+
   return {
     id: makeSeriesId(dimKey, 'marker'),
     name: '',
-    type: 'bar',
+    type: 'custom',
     xAxisIndex: rowIndex,
     yAxisIndex: rowIndex,
-    data: markerData,
-    barWidth: 2.5,
-    barMaxWidth: 3,
-    barGap: '-100%',
-    itemStyle: {
-      color: 'rgba(124,58,237,0)',
-      opacity: 0,
-      borderRadius: [0, 0, 0, 0]
-    },
-    tooltip: { show: false },
+    data: axisCategory === null ? [] : [[axisCategory, rowMax]],
     silent: true,
+    clip: false,
+    tooltip: { show: false },
+    renderItem: (params, api) => {
+      const xValue = api.value(0)
+      const yValue = api.value(1)
+      const bottom = api.coord([xValue, 0])
+      const top = api.coord([xValue, yValue])
+      if (!bottom || !top) return null
+
+      return {
+        type: 'line',
+        shape: {
+          x1: bottom[0],
+          y1: bottom[1] + 3 ,
+          x2: top[0],
+          y2: top[1] 
+        },
+        style: {
+          stroke: '#7c3aed',
+          lineWidth: 2,
+          lineDash: [6, 4],
+          opacity: 0.95
+        }
+      }
+    },
     z: 130,
     zlevel: 5
   }
@@ -1150,70 +1185,8 @@ const resolveUserMarkerIndex = (dimKey, row) => {
   const targetCategory = resolveInputCategory(dimKey, value)
   if (!targetCategory) return null
 
-  const axisIndexWithinBar = (index, bar, inputValue) => {
-    const minRaw = Number(bar?.minRaw)
-    const maxRaw = Number(bar?.maxRaw)
-    if (!Number.isFinite(minRaw) || !Number.isFinite(maxRaw) || maxRaw <= minRaw) {
-      return index
-    }
-    const ratio = clamp((inputValue - minRaw) / (maxRaw - minRaw), 0, 1)
-    const halfWidth = 0.42
-    return index - halfWidth + ratio * (halfWidth * 2)
-  }
-
-  const rangedCandidates = bars
-    .map((bar, index) => ({ bar, index }))
-    .filter(({ bar }) => !bar.isGap && bar.category === targetCategory && bar.minRaw !== null && bar.maxRaw !== null)
-
-  if (rangedCandidates.length) {
-    const inside = rangedCandidates.find(({ bar }) => value >= bar.minRaw && value <= bar.maxRaw)
-    if (inside) return axisIndexWithinBar(inside.index, inside.bar, value)
-
-    const nearest = rangedCandidates.reduce((best, item) => {
-      const mid = (item.bar.minRaw + item.bar.maxRaw) / 2
-      const dist = Math.abs(mid - value)
-      if (!best || dist < best.dist) return { item, dist }
-      return best
-    }, null)
-    return nearest?.item
-      ? axisIndexWithinBar(nearest.item.index, nearest.item.bar, value)
-      : null
-  }
-
   const categoryBarIndex = bars.findIndex(bar => !bar.isGap && bar.category === targetCategory)
-  if (categoryBarIndex >= 0) {
-    if (dimKey === 'diabetesLabel') return categoryBarIndex
-
-    const window = CATEGORY_WINDOWS?.[dimKey]?.[targetCategory]
-    if (!window || window.length < 2) return categoryBarIndex
-
-    const [min, max] = window
-    if (!(max > min)) return categoryBarIndex
-
-    const ratio = clamp((value - min) / (max - min), 0, 1)
-    // Category axis is centered at integer index; offset lets the marker reflect
-    // the relative position inside the selected category.
-    return categoryBarIndex - 0.36 + ratio * 0.72
-  }
-
-  const anyRangedBars = bars
-    .map((bar, index) => ({ bar, index }))
-    .filter(({ bar }) => !bar.isGap && bar.minRaw !== null && bar.maxRaw !== null)
-
-  if (anyRangedBars.length) {
-    const nearest = anyRangedBars.reduce((best, item) => {
-      const mid = (item.bar.minRaw + item.bar.maxRaw) / 2
-      const dist = Math.abs(mid - value)
-      if (!best || dist < best.dist) return { item, dist }
-      return best
-    }, null)
-    return nearest?.item
-      ? axisIndexWithinBar(nearest.item.index, nearest.item.bar, value)
-      : null
-  }
-
-  const firstVisible = bars.findIndex(bar => !bar.isGap)
-  return firstVisible >= 0 ? firstVisible : null
+  return categoryBarIndex >= 0 ? categoryBarIndex : null
 }
 
 const normalizeMarkerAxisCategory = (markerIndex, bars = []) => {
@@ -1375,7 +1348,7 @@ const buildOption = () => {
       : Math.min(foregroundBarMaxWidth, Math.max(8, Math.round(backgroundBarWidth * (lowDensity ? 0.8 : 0.72))))
 
     grids.push({
-      left: 92,
+      left: 102,
       right: controlRailWidth,
       top: rowLayout.top,
       height: rowLayout.height
@@ -1419,6 +1392,8 @@ const buildOption = () => {
             borderWidth: 1,
             borderColor: 'rgba(148,163,184,0.18)',
             padding: [1, 5, 1, 5],
+            width: 60,
+            align: 'center',
             fontSize: 9,
             fontWeight: 700,
             lineHeight: 15
@@ -1430,6 +1405,8 @@ const buildOption = () => {
             borderWidth: 1,
             borderColor: 'rgba(37,99,235,0.55)',
             padding: [1, 5, 1, 5],
+            width: 60,
+            align: 'center',
             fontSize: 9,
             fontWeight: 700,
             lineHeight: 15
@@ -1659,35 +1636,24 @@ const renderChart = () => {
 const renderUserMarkersOnly = () => {
   if (!chart) return
   startBusy()
-  const series = chartDimensions.map((dim) => {
+  const series = chartDimensions.map((dim, rowIndex) => {
     const row = rowDataByDim.value[dim.key] || { bars: [] }
     const markerIndex = resolveUserMarkerIndex(dim.key, row)
     const rowHasLocalSelection = (selectedByDim.value[dim.key] || []).length > 0 || (selectedBarIdsByDim.value[dim.key] || []).length > 0
     const shouldZoomCompositionAxis = viewMode.value === 'composition' && (
       focusedDimKey.value === dim.key || (!focusedDimKey.value && (hasSubgroupFilter.value || rowHasLocalSelection))
     )
-    return {
-      id: makeSeriesId(dim.key, 'marker'),
-      data: (() => {
-        const axisCategory = normalizeMarkerAxisCategory(markerIndex, row.bars || [])
-        const axisMax = viewMode.value === 'impact'
-          ? (focusedDimKey.value === dim.key
-            ? (rowDataByDim.value[dim.key]?.focusImpactAxisMax || rowDataByDim.value[dim.key]?.impactAxisMax || 1)
-            : (rowDataByDim.value[dim.key]?.impactAxisMax || 1))
-          : (focusedDimKey.value === dim.key
-            ? (rowDataByDim.value[dim.key]?.focusAxisMax || rowDataByDim.value[dim.key]?.zoomAxisMax || rowDataByDim.value[dim.key]?.axisMax || 1)
-            : (shouldZoomCompositionAxis
-              ? (rowDataByDim.value[dim.key]?.zoomAxisMax || rowDataByDim.value[dim.key]?.axisMax || 1)
-              : (rowDataByDim.value[dim.key]?.axisMax || 1)))
-        const rowMax = viewMode.value === 'impact'
-          ? axisMax
-          : axisMax
-        return (row.bars || []).map((bar, index) => {
-          if (bar?.isGap) return 0
-          return axisCategory !== null && index === axisCategory ? rowMax : 0
-        })
-      })()
-    }
+    const axisMax = viewMode.value === 'impact'
+      ? (focusedDimKey.value === dim.key
+        ? (rowDataByDim.value[dim.key]?.focusImpactAxisMax || rowDataByDim.value[dim.key]?.impactAxisMax || 1)
+        : (rowDataByDim.value[dim.key]?.impactAxisMax || 1))
+      : (focusedDimKey.value === dim.key
+        ? (rowDataByDim.value[dim.key]?.focusAxisMax || rowDataByDim.value[dim.key]?.zoomAxisMax || rowDataByDim.value[dim.key]?.axisMax || 1)
+        : (shouldZoomCompositionAxis
+          ? (rowDataByDim.value[dim.key]?.zoomAxisMax || rowDataByDim.value[dim.key]?.axisMax || 1)
+          : (rowDataByDim.value[dim.key]?.axisMax || 1)))
+
+    return buildMarkerOverlaySeries(dim.key, rowIndex, markerIndex, row.bars || [], axisMax)
   })
   chart.setOption({ series }, false, true)
   requestAnimationFrame(() => {
@@ -1695,10 +1661,8 @@ const renderUserMarkersOnly = () => {
   })
 }
 
-// ✅ 正确写法
 const toggleCategorySelection = (dimKey, category) => {
-  // 直接读当前值，context 预设的 Young Adult 还在里面
-  const current = [...normalizeSelection(dimKey, selectedByDim.value[dimKey] || [])]
+    const current = [...normalizeSelection(dimKey, selectedByDim.value[dimKey] || [])]
   
   userInteractedDims.value = new Set([...userInteractedDims.value, dimKey])
 
@@ -1731,8 +1695,8 @@ const toggleFocusedDim = (dimKey) => {
   renderChart()
 }
 
-const CHART_ROW_HEIGHT = 38
-const CHART_ROW_GAP = 40
+const CHART_ROW_HEIGHT = 35
+const CHART_ROW_GAP = 48
 const CHART_TOP_OFFSET = 42
 const CHART_BOTTOM_PADDING = 54
 const DEFAULT_CHART_HEIGHT = CHART_TOP_OFFSET
@@ -1932,6 +1896,16 @@ watch(
   }
 )
 
+watch(
+  () => props.confirmSyncSignal,
+  () => {
+    userInteractedDims.value = new Set()
+    selectedBarIdsByDim.value = createBarSelectionMap()
+    applyDefaultSelectionsFromContext(props.contextFilters || {})
+    rebuildAndRender()
+    emitExactSelection()
+  }
+)
 //new 
 const userInteractedDims = ref(new Set())
 </script>
