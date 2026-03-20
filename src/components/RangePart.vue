@@ -701,15 +701,18 @@ const roundUp = (value, step = 0.5) => {
   if (!Number.isFinite(value) || value <= 0) return step
   return Math.ceil(value / step) * step
 }
-
+  
+// const smartPercentLabel = (value) => {
+//   const numeric = Number(value) || 0
+//   if (numeric >= 10) return `${Math.round(numeric)}%`
+//   if (numeric >= 1) return `${numeric.toFixed(1)}%`
+//   if (numeric >= 0.1) return `${numeric.toFixed(2)}%`
+//   return `${numeric.toFixed(3)}%`
+// }
 const smartPercentLabel = (value) => {
   const numeric = Number(value) || 0
-  if (numeric >= 10) return `${Math.round(numeric)}%`
-  if (numeric >= 1) return `${numeric.toFixed(1)}%`
-  if (numeric >= 0.1) return `${numeric.toFixed(2)}%`
-  return `${numeric.toFixed(3)}%`
+  return `${numeric.toFixed(1)}%`
 }
-
 const buildRowDataForDim = (dim) => {
   const categories = baseCategoriesByDim.value[dim.key] || []
 

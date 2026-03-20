@@ -10,12 +10,14 @@
     </section>
 
     <section class="content-card">
-      <div class="video-placeholder">
-        <div class="video-badge">VIDEO PLACEHOLDER</div>
-        <h2>Demo video will be uploaded here</h2>
-        <p>
-          You can later replace this placeholder with an embedded YouTube video, an MP4 file, or another hosted demo link.
-        </p>
+      <div class="video-embed">
+        <iframe
+          src="https://www.youtube.com/embed/FrZ4SGGgHPE"
+          title="RiskLens Demo Video"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+        ></iframe>
       </div>
 
       <div class="link-grid">
@@ -181,5 +183,23 @@
   .hero-card h1 {
     font-size: 28px;
   }
+}
+
+.video-embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.video-embed iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
 }
 </style>

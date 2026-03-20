@@ -520,9 +520,21 @@
             <span>References</span>
           </div>
           <ul class="link-list">
-            <li>Centers for Disease Control and Prevention. National Health and Nutrition Examination Survey (NHANES).</li>
-            <li>CDC guidance on body mass index (BMI) interpretation and related health categories.</li>
-            <li>2017 ACC/AHA guideline references for systolic blood pressure categorization.</li>
+            <li>
+              <a href="https://www.cdc.gov/nchs/nhanes/index.html" target="_blank" rel="noopener noreferrer">
+                Centers for Disease Control and Prevention (CDC). <em>National Health and Nutrition Examination Survey (NHANES)</em>.
+              </a>
+            </li>
+            <li>
+              <a href="https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html" target="_blank" rel="noopener noreferrer">
+                Centers for Disease Control and Prevention (CDC). <em>Adult BMI Categories</em>.
+              </a>
+            </li>
+            <li>
+              <a href="https://professional.heart.org/en/guidelines-statements/2025-ahaaccaanpaapaabcaccpacpmagsamaaspcnmapcnasgim-guideline-for-thecir0000000000001356" target="_blank" rel="noopener noreferrer">
+                American Heart Association (AHA) / American College of Cardiology (ACC). 2025 High Blood Pressure Guideline, used as the reference for systolic blood pressure categorization.
+              </a>
+            </li>
           </ul>
         </div>
       </div>
